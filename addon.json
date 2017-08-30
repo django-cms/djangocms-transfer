@@ -1,0 +1,6 @@
+{
+    "package-name": "djangocms-transfer",
+    "installed-apps": [
+        "djangocms_transfer"
+    ]
+}
