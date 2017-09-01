@@ -44,4 +44,5 @@ class PluginImporter(CMSToolbar):
             ugettext('Import'),
             url=admin_reverse('cms_import_plugins') + '?' + data,
             disabled=not_edit_mode,
+            on_close=getattr(self.toolbar, 'request_path', self.request.path),
         )
