@@ -3,13 +3,16 @@ from __future__ import unicode_literals
 from cms.models import CMSPlugin
 from cms.utils.plugins import reorder_plugins
 
+from .utils import get_plugin_class
+
 
 def import_plugins(plugins, placeholder, language, root_plugin_id=None):
-    plugins_by_id = {}
+    source_map = {}
+    new_plugins = []
 
     if root_plugin_id:
         root_plugin = CMSPlugin.objects.get(pk=root_plugin_id)
-        plugins_by_id[root_plugin_id] = root_plugin
+        source_map[root_plugin_id] = root_plugin
     else:
         root_plugin = None
 
@@ -17,19 +20,32 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
 
     for archived_plugin in plugins:
         if archived_plugin.parent_id:
-            parent = plugins_by_id[archived_plugin.parent_id]
+            parent = source_map[archived_plugin.parent_id]
         else:
             parent = root_plugin
+
+        if parent and parent.__class__ != CMSPlugin:
+            parent = parent.cmsplugin_ptr
 
         plugin = archived_plugin.restore(
             placeholder=placeholder,
             language=language,
             parent=parent,
         )
-        plugins_by_id[archived_plugin.pk] = plugin
+        source_map[archived_plugin.pk] = plugin
 
         if parent == root_plugin:
             tree_order.append(plugin.pk)
+        new_plugins.append(plugin)
+
+    for new_plugin in new_plugins:
+        plugin_class = get_plugin_class(new_plugin.plugin_type)
+
+        if getattr(plugin_class, '_has_do_post_copy', False):
+            # getattr is used for django CMS 3.4 compatibility
+            # apps on 3.4 wishing to leverage this callback will need
+            # to manually set the _has_do_post_copy attribute.
+            plugin_class.do_post_copy(new_plugin, source_map)
 
     reorder_plugins(
         placeholder,

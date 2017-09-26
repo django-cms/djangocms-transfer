@@ -41,11 +41,12 @@ class ArchivedPlugin(BaseArchivedPlugin):
 
     @transaction.atomic
     def restore(self, placeholder, language, parent=None):
+        parent_id = parent.pk if parent else None
         plugin_kwargs = {
             'plugin_type': self.plugin_type,
             'placeholder': placeholder,
             'language': language,
-            'parent': parent,
+            'parent_id': parent_id,
             'position': self.position,
         }
 
@@ -57,6 +58,8 @@ class ArchivedPlugin(BaseArchivedPlugin):
         if self.plugin_type != 'CMSPlugin':
             _d_instance = self.deserialized_instance
             _d_instance.object._no_reorder = True
+            _d_instance.object.cmsplugin_ptr = plugin
             plugin.set_base_attr(_d_instance.object)
             _d_instance.save()
+            return _d_instance.object
         return plugin

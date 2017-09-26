@@ -127,12 +127,6 @@ class PluginImporter(CMSPluginBase):
             root_id = None
             placeholder = import_form.cleaned_data.get('placeholder')
 
-        try:
-            from cms.toolbar.utils import get_plugin_tree_as_json
-        except ImportError:
-            # Use LTE_CMS_3_4 once cms 3.5 is released
-            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
-
         if not placeholder:
             # Page placeholders/plugins import
             # TODO: Check permissions
@@ -146,6 +140,11 @@ class PluginImporter(CMSPluginBase):
         if plugin:
             new_plugins = plugin.reload().get_descendants().exclude(pk__in=tree_order)
             return plugin.get_plugin_class_instance().render_close_frame(request, obj=new_plugins[0])
+
+        if LTE_CMS_3_4:
+            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
+
+        from cms.toolbar.utils import get_plugin_tree_as_json
 
         # Placeholder plugins import
         new_plugins = placeholder.get_plugins(language).exclude(pk__in=tree_order)
