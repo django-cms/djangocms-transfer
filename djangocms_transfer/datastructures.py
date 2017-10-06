@@ -14,7 +14,7 @@ from .utils import get_plugin_model
 
 BaseArchivedPlugin = namedtuple(
     'ArchivedPlugin',
-    ['pk', 'creation_date', 'position', 'plugin_type', 'parent_id', 'data']
+    ['pk', 'position', 'plugin_type', 'parent_id', 'data']
 )
 
 ArchivedPlaceholder = namedtuple(

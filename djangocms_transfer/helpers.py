@@ -1,9 +1,7 @@
 from __future__ import unicode_literals
 from collections import defaultdict
 
-from django.core import serializers
-
-from .utils import get_plugin_fields, get_plugin_model
+from .utils import get_plugin_model
 
 
 def get_bound_plugins(plugins):
@@ -25,22 +23,3 @@ def get_bound_plugins(plugins):
 
     for plugin in plugins:
         yield plugin_lookup.get(plugin.pk, plugin)
-
-
-def get_plugin_data(plugin, only_meta=False):
-    if only_meta:
-        custom_data = None
-    else:
-        plugin_fields = get_plugin_fields(plugin.plugin_type)
-        _plugin_data = serializers.serialize('python', (plugin,), fields=plugin_fields)[0]
-        custom_data = _plugin_data['fields']
-
-    plugin_data = {
-        'pk': plugin.pk,
-        'creation_date': plugin.creation_date,
-        'position': plugin.position,
-        'plugin_type': plugin.plugin_type,
-        'parent_id': plugin.parent_id,
-        'data': custom_data,
-    }
-    return plugin_data
