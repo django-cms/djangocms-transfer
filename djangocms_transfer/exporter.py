@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import json
 import functools
+import itertools
 
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -37,8 +38,14 @@ def get_plugin_export_data(plugin):
 def get_placeholder_export_data(placeholder, language):
     get_data = helpers.get_plugin_data
     plugins = placeholder.get_plugins(language)
-    plugin_data = [get_data(plugin) for plugin in helpers.get_bound_plugins(plugins)]
-    return plugin_data
+    # The following results in two queries;
+    # First all the root plugins are fetched, then all child plugins.
+    # This is needed to account for plugin path corruptions.
+    plugins = itertools.chain(
+        plugins.filter(depth=1).order_by('position'),
+        plugins.filter(depth__gt=1).order_by('path'),
+    )
+    return [get_data(plugin) for plugin in helpers.get_bound_plugins(plugins)]
 
 
 def get_page_export_data(cms_page, language):

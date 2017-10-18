@@ -7,6 +7,7 @@ from .utils import get_plugin_fields, get_plugin_model
 
 
 def get_bound_plugins(plugins):
+    plugins = list(plugins)
     plugin_types_map = defaultdict(list)
     plugin_lookup = {}
 
