@@ -28,11 +28,8 @@ def _object_version_data_hook(data, for_page=False):
 
 
 def _get_parsed_data(file_obj, for_page=False):
-    data = json.load(
-        file_obj,
-        object_hook=_object_version_data_hook,
-    )
-    return data
+    raw = file_obj.read().decode('utf-8')
+    return json.loads(raw, object_hook=_object_version_data_hook)
 
 
 class ExportImportForm(forms.Form):
