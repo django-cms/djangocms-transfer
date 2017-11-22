@@ -1,11 +1,14 @@
 from __future__ import unicode_literals
 
+from django.db import transaction
+
 from cms.models import CMSPlugin
 from cms.utils.plugins import reorder_plugins
 
 from .utils import get_plugin_class
 
 
+@transaction.atomic
 def import_plugins(plugins, placeholder, language, root_plugin_id=None):
     source_map = {}
     new_plugins = []
@@ -56,6 +59,7 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
     placeholder.mark_as_dirty(language, clear_cache=False)
 
 
+@transaction.atomic
 def import_plugins_to_page(placeholders, page, language):
     page_placeholders = page.rescan_placeholders()
 
