@@ -40,7 +40,7 @@ class ArchivedPlugin(BaseArchivedPlugin):
         return list(deserialize('python', [data]))[0]
 
     @transaction.atomic
-    def restore(self, placeholder, language, parent=None):
+    def restore(self, placeholder, language, parent=None, with_data=True):
         parent_id = parent.pk if parent else None
         plugin_kwargs = {
             'plugin_type': self.plugin_type,
@@ -55,7 +55,7 @@ class ArchivedPlugin(BaseArchivedPlugin):
         else:
             plugin = CMSPlugin.add_root(**plugin_kwargs)
 
-        if self.plugin_type != 'CMSPlugin':
+        if with_data and self.plugin_type != 'CMSPlugin':
             _d_instance = self.deserialized_instance
             _d_instance.object._no_reorder = True
             _d_instance.object.cmsplugin_ptr = plugin
