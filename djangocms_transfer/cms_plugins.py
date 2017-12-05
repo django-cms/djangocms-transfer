@@ -53,12 +53,18 @@ class PluginImporter(CMSPluginBase):
                 admin_reverse('cms_export_plugins') + '?' + data,
                 data={},
                 action='none',
+                attributes={
+                    'icon': 'export',
+                },
             ),
             PluginMenuItem(
                 _("Import plugins"),
                 admin_reverse('cms_import_plugins') + '?' + data,
                 data={},
                 action='modal',
+                attributes={
+                    'icon': 'import',
+                },
             ),
         ]
 
@@ -74,12 +80,18 @@ class PluginImporter(CMSPluginBase):
                 admin_reverse('cms_export_plugins') + '?' + data,
                 data={},
                 action='none',
+                attributes={
+                    'icon': 'export',
+                },
             ),
             PluginMenuItem(
                 _("Import plugins"),
                 admin_reverse('cms_import_plugins') + '?' + data,
                 data={},
                 action='modal',
+                attributes={
+                    'icon': 'import',
+                },
             )
         ]
 
