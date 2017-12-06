@@ -13,6 +13,10 @@ from cms.utils.urlutils import admin_reverse
 
 @toolbar_pool.register
 class PluginImporter(CMSToolbar):
+    class Media:
+        css = {
+            'all': ('djangocms_transfer/css/transfer.css',)
+        }
 
     def populate(self):
         # always use draft if we have a page
