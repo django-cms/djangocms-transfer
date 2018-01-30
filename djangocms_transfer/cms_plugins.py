@@ -149,12 +149,12 @@ class PluginImporter(CMSPluginBase):
         # TODO: Check permissions
         import_form.run_import()
 
+        if LTE_CMS_3_4:
+            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
+        
         if plugin:
             new_plugins = plugin.reload().get_descendants().exclude(pk__in=tree_order)
             return plugin.get_plugin_class_instance().render_close_frame(request, obj=new_plugins[0])
-
-        if LTE_CMS_3_4:
-            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
 
         from cms.toolbar.utils import get_plugin_tree_as_json
 
