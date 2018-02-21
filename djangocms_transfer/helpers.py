@@ -1,17 +1,15 @@
 from __future__ import unicode_literals
 from collections import defaultdict
 
-from cms.plugin_pool import plugin_pool
 from django.core import serializers
 
-from .utils import get_plugin_fields
+from .utils import get_plugin_fields, get_plugin_model
 
 
 def get_bound_plugins(plugins):
     # COMPAT: CMS<3.5
     # When we drop support for CMS3.4 we can replace all this method by
     # from cms.utils.plugins import get_bound_plugins
-    get_plugin = plugin_pool.get_plugin
     plugin_types_map = defaultdict(list)
     plugin_ids = []
     plugin_lookup = {}
@@ -22,7 +20,7 @@ def get_bound_plugins(plugins):
         plugin_types_map[plugin.plugin_type].append(plugin.pk)
 
     for plugin_type, pks in plugin_types_map.items():
-        plugin_model = get_plugin(plugin_type).model
+        plugin_model = get_plugin_model(plugin_type)
         plugin_queryset = plugin_model.objects.filter(pk__in=pks)
 
         # put them in a map so we can replace the base CMSPlugins with their
