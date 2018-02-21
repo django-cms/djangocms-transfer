@@ -45,7 +45,7 @@ def get_placeholder_export_data(placeholder, language):
         plugins.filter(depth=1).order_by('position'),
         plugins.filter(depth__gt=1).order_by('path'),
     )
-    return [get_data(plugin) for plugin in helpers.get_bound_plugins(plugins)]
+    return [get_data(plugin) for plugin in helpers.get_bound_plugins(list(plugins))]
 
 
 def get_page_export_data(cms_page, language):
