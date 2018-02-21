@@ -7,12 +7,16 @@ from .utils import get_plugin_fields, get_plugin_model
 
 
 def get_bound_plugins(plugins):
-    plugins = list(plugins)
+    # COMPAT: CMS<3.5
+    # When we drop support for CMS3.4 we can replace all this method by
+    # from cms.utils.plugins import get_bound_plugins
     plugin_types_map = defaultdict(list)
+    plugin_ids = []
     plugin_lookup = {}
 
     # make a map of plugin types, needed later for downcasting
     for plugin in plugins:
+        plugin_ids.append(plugin.pk)
         plugin_types_map[plugin.plugin_type].append(plugin.pk)
 
     for plugin_type, pks in plugin_types_map.items():
@@ -25,7 +29,12 @@ def get_bound_plugins(plugins):
             plugin_lookup[instance.pk] = instance
 
     for plugin in plugins:
-        yield plugin_lookup.get(plugin.pk, plugin)
+        parent_not_available = (not plugin.parent_id or plugin.parent_id not in plugin_ids)
+        # The plugin either has no parent or needs to have a non-ghost parent
+        valid_parent = (parent_not_available or plugin.parent_id in plugin_lookup)
+
+        if valid_parent and plugin.pk in plugin_lookup:
+            yield plugin_lookup[plugin.pk]
 
 
 def get_plugin_data(plugin, only_meta=False):
