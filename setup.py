@@ -4,7 +4,7 @@ import djangocms_transfer
 
 
 INSTALL_REQUIREMENTS = [
-    'Django>=1.8,<1.11',
+    'Django>=1.8,<2',
     'django-cms>=3.4.2',
 ]
 
