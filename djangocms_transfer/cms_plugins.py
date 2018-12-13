@@ -3,7 +3,7 @@ import json
 
 from django.conf.urls import url
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.utils.http import urlencode
@@ -151,7 +151,7 @@ class PluginImporter(CMSPluginBase):
 
         if LTE_CMS_3_4:
             return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
-        
+
         if plugin:
             new_plugins = plugin.reload().get_descendants().exclude(pk__in=tree_order)
             return plugin.get_plugin_class_instance().render_close_frame(request, obj=new_plugins[0])
