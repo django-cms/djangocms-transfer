@@ -10,6 +10,8 @@ from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.utils.urlutils import admin_reverse
 
+from .compat import GTE_CMS_3_6
+
 
 @toolbar_pool.register
 class PluginImporter(CMSToolbar):
@@ -37,7 +39,12 @@ class PluginImporter(CMSToolbar):
             'language': self.current_lang,
             'cms_page': page.pk,
         })
-        not_edit_mode = not self.toolbar.edit_mode
+
+        if GTE_CMS_3_6:
+            not_edit_mode = not self.toolbar.toolbar_language
+        else:
+            not_edit_mode = not self.toolbar.language
+
         page_menu.add_break('Page menu importer break')
         page_menu.add_link_item(
             ugettext('Export'),
