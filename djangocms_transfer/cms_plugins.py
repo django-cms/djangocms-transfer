@@ -69,7 +69,7 @@ class PluginImporter(CMSPluginBase):
             ),
         ]
 
-    @classmethod
+    @classmethod  # noqa
     def get_extra_placeholder_menu_items(cls, request, placeholder):  # noqa
         data = urlencode({
             'language': get_language_from_request(request),
