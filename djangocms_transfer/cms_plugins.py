@@ -5,7 +5,7 @@ import json
 
 from django.conf.urls import url
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -31,7 +31,7 @@ class PluginImporter(CMSPluginBase):
         ]
         return urlpatterns
 
-    def get_extra_placeholder_menu_items(self, request, placeholder):
+    def get_extra_placeholder_menu_items(self, request, placeholder):  # noqa
         # django-cms 3.4 compatibility
         return self.get_extra_placeholder_menu_items(request, placeholder)
 
