@@ -5,9 +5,9 @@ from django.utils.http import urlencode
 from django.utils.translation import ugettext
 
 from cms.api import get_page_draft
-from cms.utils.page_permissions import user_can_change_page
 from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
+from cms.utils.page_permissions import user_can_change_page
 from cms.utils.urlutils import admin_reverse
 
 from .compat import GTE_CMS_3_6

@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 HELPER_SETTINGS = {
     'INSTALLED_APPS': [],
-    'LANGUAGE_CODE': 'en',
     'CMS_LANGUAGES': {
         1: [{
             'code': 'en',
             'name': 'English',
         }]
     },
+    'LANGUAGE_CODE': 'en',
     'ALLOWED_HOSTS': ['localhost'],
 }
 

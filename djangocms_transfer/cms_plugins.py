@@ -1,22 +1,23 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 import json
 
 from django.conf.urls import url
 from django.core.exceptions import PermissionDenied
-from django.urls import reverse
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils.http import urlencode
 from django.utils.translation import ugettext_lazy as _
 
-from cms.plugin_base import CMSPluginBase
-from cms.plugin_base import PluginMenuItem
+from cms.plugin_base import CMSPluginBase, PluginMenuItem
 from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
 from .compat import LTE_CMS_3_4
-from .forms import (ExportImportForm, PluginExportForm, PluginImportForm)
+from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
 
 class PluginImporter(CMSPluginBase):
@@ -30,7 +31,7 @@ class PluginImporter(CMSPluginBase):
         ]
         return urlpatterns
 
-    def get_extra_placeholder_menu_items(self, request, placeholder):
+    def get_extra_placeholder_menu_items(self, request, placeholder):  # noqa
         # django-cms 3.4 compatibility
         return self.get_extra_placeholder_menu_items(request, placeholder)
 
@@ -49,7 +50,7 @@ class PluginImporter(CMSPluginBase):
         })
         return [
             PluginMenuItem(
-                _("Export plugins"),
+                _('Export plugins'),
                 admin_reverse('cms_export_plugins') + '?' + data,
                 data={},
                 action='none',
@@ -58,7 +59,7 @@ class PluginImporter(CMSPluginBase):
                 },
             ),
             PluginMenuItem(
-                _("Import plugins"),
+                _('Import plugins'),
                 admin_reverse('cms_import_plugins') + '?' + data,
                 data={},
                 action='modal',
@@ -68,15 +69,15 @@ class PluginImporter(CMSPluginBase):
             ),
         ]
 
-    @classmethod
-    def get_extra_placeholder_menu_items(cls, request, placeholder):
+    @classmethod  # noqa
+    def get_extra_placeholder_menu_items(cls, request, placeholder):  # noqa
         data = urlencode({
             'language': get_language_from_request(request),
             'placeholder': placeholder.pk,
         })
         return [
             PluginMenuItem(
-                _("Export plugins"),
+                _('Export plugins'),
                 admin_reverse('cms_export_plugins') + '?' + data,
                 data={},
                 action='none',
@@ -85,7 +86,7 @@ class PluginImporter(CMSPluginBase):
                 },
             ),
             PluginMenuItem(
-                _("Import plugins"),
+                _('Import plugins'),
                 admin_reverse('cms_import_plugins') + '?' + data,
                 data={},
                 action='modal',
@@ -108,7 +109,7 @@ class PluginImporter(CMSPluginBase):
             initial_data = None
 
         if request.method == 'GET' and not new_form.is_valid():
-            return HttpResponseBadRequest('Form received unexpected values')
+            return HttpResponseBadRequest(_('Form received unexpected values.'))
 
         import_form = PluginImportForm(
             data=request.POST or None,
@@ -174,7 +175,7 @@ class PluginImporter(CMSPluginBase):
         form = PluginExportForm(request.GET or None)
 
         if not form.is_valid():
-            return HttpResponseBadRequest('Form received unexpected values')
+            return HttpResponseBadRequest(_('Form received unexpected values.'))
 
         # TODO: Check permissions
         filename = form.get_filename()

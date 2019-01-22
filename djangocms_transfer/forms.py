@@ -1,14 +1,17 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 import json
 
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext_lazy as _
 
-from cms.models import CMSPlugin, Placeholder, Page
+from cms.models import CMSPlugin, Page, Placeholder
 
 from .datastructures import ArchivedPlaceholder, ArchivedPlugin
-from .exporter import export_plugin, export_page, export_placeholder
+from .exporter import export_page, export_placeholder, export_plugin
 from .importer import import_plugins, import_plugins_to_page
 
 
@@ -63,19 +66,19 @@ class ExportImportForm(forms.Form):
         cms_page = self.cleaned_data.get('cms_page')
 
         if not any([plugin, placeholder, cms_page]):
-            message = 'A plugin, placeholder or page is required'
+            message = _('A plugin, placeholder or page is required.')
             raise forms.ValidationError(message)
 
         if cms_page and (plugin or placeholder):
-            message = 'Plugins can be imported to pages, plugins or placeholders. Not all three.'
+            message = _('Plugins can be imported to pages, plugins or placeholders. Not all three.')
             raise forms.ValidationError(message)
 
         if placeholder and (cms_page or plugin):
-            message = 'Plugins can be imported to pages, plugins or placeholders. Not all three.'
+            message = _('Plugins can be imported to pages, plugins or placeholders. Not all three.')
             raise forms.ValidationError(message)
 
         if plugin and (cms_page or placeholder):
-            message = 'Plugins can be imported to pages, plugins or placeholders. Not all three.'
+            message = _('Plugins can be imported to pages, plugins or placeholders. Not all three.')
             raise forms.ValidationError(message)
 
         if plugin:
