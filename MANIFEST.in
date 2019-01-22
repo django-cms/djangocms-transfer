@@ -3,4 +3,3 @@ include README.rst
 recursive-include djangocms_transfer/static *
 recursive-include djangocms_transfer/templates *
 recursive-exclude * *.py[co]
-recursive-exclude * *.scssc
