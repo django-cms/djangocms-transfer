@@ -50,7 +50,7 @@ class PluginImporter(CMSPluginBase):
         })
         return [
             PluginMenuItem(
-                _("Export plugins"),
+                _('Export plugins'),
                 admin_reverse('cms_export_plugins') + '?' + data,
                 data={},
                 action='none',
@@ -59,7 +59,7 @@ class PluginImporter(CMSPluginBase):
                 },
             ),
             PluginMenuItem(
-                _("Import plugins"),
+                _('Import plugins'),
                 admin_reverse('cms_import_plugins') + '?' + data,
                 data={},
                 action='modal',
@@ -77,7 +77,7 @@ class PluginImporter(CMSPluginBase):
         })
         return [
             PluginMenuItem(
-                _("Export plugins"),
+                _('Export plugins'),
                 admin_reverse('cms_export_plugins') + '?' + data,
                 data={},
                 action='none',
@@ -86,7 +86,7 @@ class PluginImporter(CMSPluginBase):
                 },
             ),
             PluginMenuItem(
-                _("Import plugins"),
+                _('Import plugins'),
                 admin_reverse('cms_import_plugins') + '?' + data,
                 data={},
                 action='modal',
@@ -109,7 +109,7 @@ class PluginImporter(CMSPluginBase):
             initial_data = None
 
         if request.method == 'GET' and not new_form.is_valid():
-            return HttpResponseBadRequest('Form received unexpected values')
+            return HttpResponseBadRequest(_('Form received unexpected values.'))
 
         import_form = PluginImportForm(
             data=request.POST or None,
@@ -175,7 +175,7 @@ class PluginImporter(CMSPluginBase):
         form = PluginExportForm(request.GET or None)
 
         if not form.is_valid():
-            return HttpResponseBadRequest('Form received unexpected values')
+            return HttpResponseBadRequest(_('Form received unexpected values.'))
 
         # TODO: Check permissions
         filename = form.get_filename()
