@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import json
+
 import functools
 import itertools
+import json
 
 from django.core.serializers.json import DjangoJSONEncoder
 

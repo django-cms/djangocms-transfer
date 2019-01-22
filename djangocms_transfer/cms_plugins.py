@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 import json
 
 from django.conf.urls import url
 from django.core.exceptions import PermissionDenied
-from django.urls import reverse
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils.http import urlencode
 from django.utils.translation import ugettext_lazy as _
 
-from cms.plugin_base import CMSPluginBase
-from cms.plugin_base import PluginMenuItem
+from cms.plugin_base import CMSPluginBase, PluginMenuItem
 from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
 from .compat import LTE_CMS_3_4
-from .forms import (ExportImportForm, PluginExportForm, PluginImportForm)
+from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
 
 class PluginImporter(CMSPluginBase):
