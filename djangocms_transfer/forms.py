@@ -66,7 +66,7 @@ class ExportImportForm(forms.Form):
         cms_page = self.cleaned_data.get('cms_page')
 
         if not any([plugin, placeholder, cms_page]):
-            message = _('A plugin, placeholder or page is required')
+            message = _('A plugin, placeholder or page is required.')
             raise forms.ValidationError(message)
 
         if cms_page and (plugin or placeholder):

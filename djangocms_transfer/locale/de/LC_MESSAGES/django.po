@@ -1,0 +1,66 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+# Translators:
+# Angelo Dini <angelo.dini@divio.ch>, 2019
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-01-22 11:52+0100\n"
+"PO-Revision-Date: 2019-01-22 10:49+0000\n"
+"Last-Translator: Angelo Dini <angelo.dini@divio.ch>, 2019\n"
+"Language-Team: German (https://www.transifex.com/divio/teams/58664/de/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: djangocms_transfer/apps.py:10
+msgid "django CMS Transfer"
+msgstr "django CMS Transfer"
+
+#: djangocms_transfer/cms_plugins.py:53 djangocms_transfer/cms_plugins.py:80
+msgid "Export plugins"
+msgstr "Plugins exportieren"
+
+#: djangocms_transfer/cms_plugins.py:62 djangocms_transfer/cms_plugins.py:89
+#: djangocms_transfer/templates/djangocms_transfer/import_plugins.html:5
+msgid "Import plugins"
+msgstr "Plugins importieren"
+
+#: djangocms_transfer/cms_plugins.py:112 djangocms_transfer/cms_plugins.py:178
+msgid "Form received unexpected values."
+msgstr "Das Formular hat unerwartete Inhalte erhalten."
+
+#: djangocms_transfer/cms_toolbars.py:50
+msgid "Export"
+msgstr "Exportieren"
+
+#: djangocms_transfer/cms_toolbars.py:55
+#: djangocms_transfer/templates/djangocms_transfer/import_plugins.html:31
+msgid "Import"
+msgstr "Importieren"
+
+#: djangocms_transfer/forms.py:69
+msgid "A plugin, placeholder or page is required."
+msgstr "Ein Plugin, Platzhalter oder Seite ist erforderlich."
+
+#: djangocms_transfer/forms.py:73 djangocms_transfer/forms.py:77
+#: djangocms_transfer/forms.py:81
+msgid ""
+"Plugins can be imported to pages, plugins or placeholders. Not all three."
+msgstr ""
+"Plugins können in Seiten, Plugins oder Platzhalter importiert werden. "
+"Allerdings nicht in alle drei gleichzeitig."
+
+#: djangocms_transfer/templates/djangocms_transfer/import_plugins.html:8
+msgid "Please correct the error below."
+msgid_plural "Please correct the errors below."
+msgstr[0] "Bitte korrigiere den unten aufgeführten Fehler."
+msgstr[1] "Bitte korrigiere die unten aufgeführten Fehler."
