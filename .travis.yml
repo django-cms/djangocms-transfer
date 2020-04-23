@@ -29,6 +29,8 @@ matrix:
       env: DJANGO='dj22' CMS='cms37'
       dist: xenial
       sudo: true
+  allow_failures:
+    - python: 2.7
 
 install:
   - pip install coverage isort tox
