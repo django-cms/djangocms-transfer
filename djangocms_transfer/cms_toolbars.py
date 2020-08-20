@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.utils.http import urlencode
-from django.utils.translation import ugettext
+from django.utils.translation import gettext
 
 from cms.api import get_page_draft
 from cms.toolbar_base import CMSToolbar
@@ -47,12 +44,12 @@ class PluginImporter(CMSToolbar):
 
         page_menu.add_break('Page menu importer break')
         page_menu.add_link_item(
-            ugettext('Export'),
+            gettext('Export'),
             url=admin_reverse('cms_export_plugins') + '?' + data,
             disabled=not_edit_mode,
         )
         page_menu.add_modal_item(
-            ugettext('Import'),
+            gettext('Import'),
             url=admin_reverse('cms_import_plugins') + '?' + data,
             disabled=not_edit_mode,
             on_close=getattr(self.toolbar, 'request_path', self.request.path),

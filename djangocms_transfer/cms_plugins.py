@@ -1,15 +1,11 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import json
 
-from django.conf.urls import url
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
-from django.urls import reverse
+from django.urls import re_path, reverse
 from django.utils.http import urlencode
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from cms.plugin_base import CMSPluginBase, PluginMenuItem
 from cms.plugin_pool import plugin_pool
@@ -26,8 +22,8 @@ class PluginImporter(CMSPluginBase):
 
     def get_plugin_urls(self):
         urlpatterns = [
-            url(r'^export-plugins/$', self.export_plugins_view, name='cms_export_plugins'),
-            url(r'^import-plugins/$', self.import_plugins_view, name='cms_import_plugins'),
+            re_path(r'^export-plugins/$', self.export_plugins_view, name='cms_export_plugins'),
+            re_path(r'^import-plugins/$', self.import_plugins_view, name='cms_import_plugins'),
         ]
         return urlpatterns
 
