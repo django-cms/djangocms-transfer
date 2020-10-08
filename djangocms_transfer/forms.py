@@ -4,6 +4,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 from cms.models import CMSPlugin, Page, Placeholder
 
@@ -92,9 +93,27 @@ class ExportImportForm(forms.Form):
 class PluginExportForm(ExportImportForm):
 
     def get_filename(self):
-        if self.cleaned_data.get('cms_page'):
-            return 'cms_page_plugins.json'
-        return 'plugins.json'
+        data = self.cleaned_data
+        language = data['language']
+        page = data['cms_page']
+        plugin = data['plugin']
+        placeholder = data['placeholder']
+
+        if page:
+            return "{}.json".format(
+                page.get_slug(language=language)
+            )
+
+        if placeholder:
+            return "{}_{}.json".format(
+                placeholder.page.get_slug(language=language),
+                slugify(placeholder.slot)
+            )
+
+        return "{}_{}.json".format(
+            plugin.page.get_slug(language=language),
+            slugify(plugin.get_short_description())
+        )
 
     def run_export(self):
         data = self.cleaned_data
