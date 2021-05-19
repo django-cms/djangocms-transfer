@@ -20,6 +20,11 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
     tree_order = placeholder.get_plugin_tree_order(language, parent_id=root_plugin_id)
 
     for archived_plugin in plugins:
+        # custom handling via "get_plugin_data" can lead to "null"-values
+        # instead of plugin-dictionaries. We skip those here.
+        if archived_plugin is None:
+            continue
+
         if archived_plugin.parent_id:
             parent = source_map[archived_plugin.parent_id]
         else:

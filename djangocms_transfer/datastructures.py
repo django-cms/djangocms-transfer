@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 from django.core.serializers import deserialize
+from django.conf import settings
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
@@ -55,6 +56,13 @@ class ArchivedPlugin(BaseArchivedPlugin):
             _d_instance.object._no_reorder = True
             _d_instance.object.cmsplugin_ptr = plugin
             plugin.set_base_attr(_d_instance.object)
+
+            # customize plugin-data on import with configured function
+            pps = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA", None)
+            if pps:
+                module, function = pps.rsplit(".", 1)
+                getattr(__import__(module, fromlist=[""]), function)(_d_instance)
+
             _d_instance.save()
             return _d_instance.object
         return plugin
