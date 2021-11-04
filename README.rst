@@ -6,7 +6,7 @@ django CMS Transfer
 
 **django CMS Transfer** is an **experimental** package that allows you to export
 and import plugin data from a page or a placeholder. It does not support foreign
-key relations and won't import/export related data.
+key relations and won't import/export related data, such as `media <https://github.com/django-cms/djangocms-transfer/issues/18>`_.
 
 .. note:: 
         
