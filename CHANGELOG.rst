@@ -6,7 +6,7 @@ Changelog
 ==================
 
 * Added support for custom serializer
-* Added serializer `django_cms` to be able to serializer `filer.Image`
+* Added serializer `django_cms` to be able to serialize `filer.Image`
 
 1.0.0 (2020-09-02)
 ==================

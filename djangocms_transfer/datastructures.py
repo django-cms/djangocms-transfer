@@ -7,8 +7,7 @@ from django.utils.functional import cached_property
 
 from cms.models import CMSPlugin
 
-from .utils import get_plugin_model
-
+from .utils import get_plugin_model, get_serializer_name
 
 BaseArchivedPlugin = namedtuple(
     'ArchivedPlugin',
@@ -35,7 +34,7 @@ class ArchivedPlugin(BaseArchivedPlugin):
         }
 
         # TODO: Handle deserialization error
-        return list(deserialize('python', [data]))[0]
+        return list(deserialize(get_serializer_name(), [data]))[0]
 
     @transaction.atomic
     def restore(self, placeholder, language, parent=None, with_data=True):
