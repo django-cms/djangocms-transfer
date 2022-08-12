@@ -34,3 +34,8 @@ def get_plugin_fields(plugin_type):
 @lru_cache()
 def get_plugin_model(plugin_type):
     return get_plugin_class(plugin_type).model
+
+
+def get_serializer_name(default='python'):
+    from django.conf import settings
+    return getattr(settings, 'DJANGO_CMS_TRANSFER_SERIALIZER', default)

@@ -2,13 +2,12 @@ from collections import namedtuple
 
 from django.core.serializers import deserialize
 from django.db import transaction
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 
 from cms.models import CMSPlugin
 
-from .utils import get_plugin_model
-
+from .utils import get_plugin_model, get_serializer_name
 
 BaseArchivedPlugin = namedtuple(
     'ArchivedPlugin',
@@ -30,12 +29,12 @@ class ArchivedPlugin(BaseArchivedPlugin):
     @cached_property
     def deserialized_instance(self):
         data = {
-            'model': force_text(self.model._meta),
+            'model': force_str(self.model._meta),
             'fields': self.data,
         }
 
         # TODO: Handle deserialization error
-        return list(deserialize('python', [data]))[0]
+        return list(deserialize(get_serializer_name(), [data]))[0]
 
     @transaction.atomic
     def restore(self, placeholder, language, parent=None, with_data=True):

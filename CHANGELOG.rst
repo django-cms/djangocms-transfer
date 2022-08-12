@@ -2,6 +2,12 @@
 Changelog
 =========
 
+1.0.1 (2022-07-09)
+==================
+
+* Added support for Django 4.0
+* Added support for custom serializer
+* Added serializer `django_cms` to be able to serialize `filer.Image`
 
 1.0.0 (2020-09-02)
 ==================
