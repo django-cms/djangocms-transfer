@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from django.core import serializers
 
+from . import get_serializer_name
 from .utils import get_plugin_fields, get_plugin_model
 
 
@@ -41,7 +42,7 @@ def get_plugin_data(plugin, only_meta=False):
         custom_data = None
     else:
         plugin_fields = get_plugin_fields(plugin.plugin_type)
-        _plugin_data = serializers.serialize('python', (plugin,), fields=plugin_fields)[0]
+        _plugin_data = serializers.serialize(get_serializer_name(), (plugin,), fields=plugin_fields)[0]
         custom_data = _plugin_data['fields']
 
     plugin_data = {
