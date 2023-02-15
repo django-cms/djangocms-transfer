@@ -27,10 +27,6 @@ class PluginImporter(CMSPluginBase):
         ]
         return urlpatterns
 
-    def get_extra_placeholder_menu_items(self, request, placeholder):
-        # django-cms 3.4 compatibility
-        return self.get_extra_placeholder_menu_items(request, placeholder)
-
     def get_extra_global_plugin_menu_items(self, request, plugin):
         # django-cms 3.4 compatibility
         return self.get_extra_plugin_menu_items(request, plugin)
