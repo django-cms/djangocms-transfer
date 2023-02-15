@@ -39,6 +39,8 @@ section.
 Documentation
 =============
 
+The setting ``DJANGO_CMS_TRANSFER_SERIALIZER`` allows to register a custom json serializer. An example for an use case could be to subclass Django's build-in python serializer and let it base64-encode inline image data base64. 
+
 See ``REQUIREMENTS`` in the `setup.py <https://github.com/divio/djangocms-transfer/blob/master/setup.py>`_
 file for additional dependencies:
 
