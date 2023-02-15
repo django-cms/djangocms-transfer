@@ -2,6 +2,12 @@
 Changelog
 =========
 
+unpublished
+===========
+
+* Added support for Django 3.2 and 4.1
+* Added support for django up to CMS 3.11
+* Serializer made condigurable through Django setting DJANGO_CMS_TRANSFER_SERIALIZER
 
 1.0.0 (2020-09-02)
 ==================
