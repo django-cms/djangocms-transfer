@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from django.core import serializers
+from django.conf import settings
 
 from . import get_serializer_name
 from .utils import get_plugin_fields, get_plugin_model
@@ -53,4 +54,10 @@ def get_plugin_data(plugin, only_meta=False):
         'parent_id': plugin.parent_id,
         'data': custom_data,
     }
-    return plugin_data
+
+    gpd = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA", None)
+    if gpd:
+        module, function = gpd.rsplit(".", 1)
+        return getattr(__import__(module, fromlist=[""]), function)(plugin, plugin_data)
+    else:
+        return plugin_data

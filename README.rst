@@ -57,6 +57,52 @@ For a manual install:
 * run ``python manage.py migrate djangocms_transfer``
 
 
+Customization
+-------------
+
+Following settings are available:
+
+* **DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA**:
+
+  Enables processing of plugin instances prior to serialization, e.g.
+  ``myapp.module.function``.
+
+* **DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA**:
+
+  Enables processing of plugin instances prior to saving, e.g.
+  ``myapp.module.function``.
+  For example: set default-values for ForeignKeys (images for django_filer, ..)
+
+As an example the combination of ``_PROCESS_EXPORT_PLUGIN_DATA`` and
+``_PROCESS_IMPORT_PLUGIN_DATA`` lets you export and import the data between
+different systems while setting the contents as you need it::
+
+    # settings.py
+    .._PROCESS_EXPORT_PLUGIN_DATA = "myapp.some.module.export_function"
+    .._PROCESS_IMPORT_PLUGIN_DATA = "myapp.some.module.import_function"
+
+    # custom functions
+    def export_function(plugin, plugin_data):
+        # remove child-plugins which can't be handled
+        if plugin.parent_id and plugin.parent.plugin_type == "SomeParentPlugin":
+            return None
+        # change data
+        if plugin.plugin_type == "SomePlugin":
+            plugin_data["data"].update({
+                "some_field": "TODO: change me",
+            })
+        return plugin_data
+
+    def import_function(deserialized_object):
+        some_related_object = MyModel.objects.first()
+        for field in deserialized_object.object._meta.fields:
+            # example of setting a default value for a related field
+            if isinstance(field, ForeignKey):
+                value = getattr(deserialized_object.object, field.attname)
+                if field.related_model == MyModel and value is not None:
+                    setattr(deserialized_object.object, field.name, some_related_object)
+
+
 Running Tests
 -------------
 
