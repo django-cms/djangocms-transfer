@@ -27,10 +27,6 @@ class PluginImporter(CMSPluginBase):
         ]
         return urlpatterns
 
-    def get_extra_placeholder_menu_items(self, request, placeholder):  # noqa
-        # django-cms 3.4 compatibility
-        return self.get_extra_placeholder_menu_items(request, placeholder)
-
     def get_extra_global_plugin_menu_items(self, request, plugin):
         # django-cms 3.4 compatibility
         return self.get_extra_plugin_menu_items(request, plugin)
@@ -65,7 +61,7 @@ class PluginImporter(CMSPluginBase):
             ),
         ]
 
-    @classmethod  # noqa
+    @classmethod
     def get_extra_placeholder_menu_items(cls, request, placeholder):  # noqa
         data = urlencode({
             'language': get_language_from_request(request),
@@ -176,7 +172,7 @@ class PluginImporter(CMSPluginBase):
         # TODO: Check permissions
         filename = form.get_filename()
         response = HttpResponse(form.run_export(), content_type='application/json')
-        response['Content-Disposition'] = 'attachment; filename={}'.format(filename)
+        response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
 
 
