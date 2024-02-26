@@ -103,17 +103,18 @@ class PluginExportForm(ExportImportForm):
             return "{}.json".format(
                 page.get_slug(language=language)
             )
-
-        if placeholder:
+        elif placeholder and placeholder.page is not None:
             return "{}_{}.json".format(
                 placeholder.page.get_slug(language=language),
                 slugify(placeholder.slot)
             )
-
-        return "{}_{}.json".format(
-            plugin.page.get_slug(language=language),
-            slugify(plugin.get_short_description())
-        )
+        elif plugin is not None and plugin.page is not None:
+            return "{}_{}.json".format(
+                plugin.page.get_slug(language=language),
+                slugify(plugin.get_short_description())
+            )
+        else:
+            return 'plugins.json'
 
     def run_export(self):
         data = self.cleaned_data
