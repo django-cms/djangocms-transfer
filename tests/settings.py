@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 HELPER_SETTINGS = {
-    "INSTALLED_APPS": [],
+    "INSTALLED_APPS": [
+        "djangocms_transfer",
+    ],
     "CMS_LANGUAGES": {
         1: [
             {
