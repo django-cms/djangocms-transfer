@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from django.core import serializers
 from django.conf import settings
+from django.core import serializers
 
 from . import get_serializer_name
 from .utils import get_plugin_fields, get_plugin_model

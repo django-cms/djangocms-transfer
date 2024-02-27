@@ -1,7 +1,7 @@
 from collections import namedtuple
 
-from django.core.serializers import deserialize
 from django.conf import settings
+from django.core.serializers import deserialize
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
