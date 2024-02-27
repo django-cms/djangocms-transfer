@@ -2,3 +2,4 @@
 django-app-helper
 tox
 coverage
+black

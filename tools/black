@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+root_dir=$(readlink -f "$(dirname $0)/..")
+
+black --target-version py310 \
+      --line-length 119 \
+      $@ \
+      $root_dir/djangocms_transfer \
+      $root_dir/tests \
+      $root_dir/tools
