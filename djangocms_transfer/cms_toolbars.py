@@ -13,9 +13,7 @@ from .compat import GTE_CMS_3_6
 @toolbar_pool.register
 class PluginImporter(CMSToolbar):
     class Media:
-        css = {
-            'all': ('djangocms_transfer/css/transfer.css',)
-        }
+        css = {"all": ("djangocms_transfer/css/transfer.css",)}
 
     def populate(self):
         # always use draft if we have a page
@@ -27,30 +25,32 @@ class PluginImporter(CMSToolbar):
         if not user_can_change_page(self.request.user, page):
             return
 
-        page_menu = self.toolbar.get_menu('page')
+        page_menu = self.toolbar.get_menu("page")
 
         if not page_menu or page_menu.disabled:
             return
 
-        data = urlencode({
-            'language': self.current_lang,
-            'cms_page': page.pk,
-        })
+        data = urlencode(
+            {
+                "language": self.current_lang,
+                "cms_page": page.pk,
+            }
+        )
 
         if GTE_CMS_3_6:
             not_edit_mode = not self.toolbar.toolbar_language
         else:
             not_edit_mode = not self.toolbar.language
 
-        page_menu.add_break('Page menu importer break')
+        page_menu.add_break("Page menu importer break")
         page_menu.add_link_item(
-            gettext('Export'),
-            url=admin_reverse('cms_export_plugins') + '?' + data,
+            gettext("Export"),
+            url=admin_reverse("cms_export_plugins") + "?" + data,
             disabled=not_edit_mode,
         )
         page_menu.add_modal_item(
-            gettext('Import'),
-            url=admin_reverse('cms_import_plugins') + '?' + data,
+            gettext("Import"),
+            url=admin_reverse("cms_import_plugins") + "?" + data,
             disabled=not_edit_mode,
-            on_close=getattr(self.toolbar, 'request_path', self.request.path),
+            on_close=getattr(self.toolbar, "request_path", self.request.path),
         )
