@@ -4,6 +4,7 @@
 *.log
 *.pot
 .DS_Store
+.coverage
 .coverage/
 .eggs/
 .idea/
@@ -26,3 +27,6 @@ npm-debug.log
 package-lock.json
 
 local.sqlite
+
+# vi
+*.swp
