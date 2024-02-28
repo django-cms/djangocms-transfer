@@ -3,3 +3,5 @@ django-app-helper
 tox
 coverage
 black
+freezegun
+djangocms-text-ckeditor

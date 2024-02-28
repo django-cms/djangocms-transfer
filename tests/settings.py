@@ -2,6 +2,7 @@
 HELPER_SETTINGS = {
     "INSTALLED_APPS": [
         "djangocms_transfer",
+        "djangocms_text_ckeditor",
     ],
     "CMS_LANGUAGES": {
         1: [
