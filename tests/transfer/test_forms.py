@@ -1,5 +1,6 @@
 import json
 import os
+import unittest
 from tempfile import mkdtemp
 
 from django.core.files import File
@@ -129,6 +130,75 @@ class PluginImportFormTest(FunctionalityBaseTestCase):
         with self.subTest("language missing"):
             form = PluginImportForm(data={"import_file": file_})
             self.assertEqual(["This field is required."], form.errors["language"])
+
+        # TODO: when setting the form, the `form.errors` is filled for "missing
+        # import_file" although it is given/set in `data`
+        self.skipTest("TODO: fix validation with 'import_file'")
+
+        with self.subTest("one of plugin/placeholder/page required"):
+            form = PluginImportForm(data={"language": "en", "import_file": file_})
+            self.assertEqual(["A plugin, placeholder or page is required."], form.errors["__all__"])
+
+        with self.subTest("cms_page + plugin given"):
+            form = PluginImportForm(data={"import_file": file_, "language": "en", "cms_page": page, "plugin": plugin})
+            self.assertEqual(
+                ["Plugins can be imported to pages, plugins or placeholders. Not all three."],
+                form.errors["__all__"],
+            )
+
+        with self.subTest("cms_page + placeholder given"):
+            form = PluginImportForm(
+                data={"import_file": file_, "language": "en", "cms_page": page, "placeholder": placeholder},
+            )
+            self.assertEqual(
+                ["Plugins can be imported to pages, plugins or placeholders. Not all three."],
+                form.errors["__all__"],
+            )
+
+        with self.subTest("plugin + placeholder given"):
+            form = PluginImportForm(
+                data={"import_file": file_, "language": "en", "plugin": plugin, "placeholder": placeholder},
+            )
+            self.assertEqual(
+                ["Plugins can be imported to pages, plugins or placeholders. Not all three."],
+                form.errors["__all__"],
+            )
+
+    @unittest.skip("TODO: fix validation with 'import_file'")
+    def test_run_import(self):
+        # TODO: when setting the form, the `form.errors` is filled for "missing
+        # import_file" although it is given/set in `data`
+        page = self.page
+        placeholder = page.placeholders.get(slot="content")
+        plugin = self._create_plugin()
+        file_ = self._get_file()
+
+        data = {
+            "plugin": plugin,
+            "placeholder": None,
+            "cms_page": None,
+            "language": "en",
+            "import_file": file_,
+        }
+
+        with self.subTest("import plugin"):
+            form = PluginImportForm(data=data)
+            form.clean()
+            form.run_import()
+
+        with self.subTest("import placeholder"):
+            data["placeholder"] = placeholder
+            data["plugin"] = None
+            form = PluginImportForm(data=data)
+            form.clean()
+            form.run_import()
+
+        with self.subTest("import page"):
+            data["cms_page"] = page
+            data["placeholder"] = None
+            form = PluginImportForm(data=data)
+            form.clean()
+            form.run_import()
 
     def _get_file(self):
         content = json.dumps(self._get_expected_plugin_export_data())
