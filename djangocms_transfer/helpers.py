@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from django.core import serializers
 from django.conf import settings
+from django.core import serializers
 
 from . import get_serializer_name
 from .utils import get_plugin_fields, get_plugin_model
@@ -30,9 +30,9 @@ def get_bound_plugins(plugins):
             plugin_lookup[instance.pk] = instance
 
     for plugin in plugins:
-        parent_not_available = (not plugin.parent_id or plugin.parent_id not in plugin_ids)
+        parent_not_available = not plugin.parent_id or plugin.parent_id not in plugin_ids
         # The plugin either has no parent or needs to have a non-ghost parent
-        valid_parent = (parent_not_available or plugin.parent_id in plugin_lookup)
+        valid_parent = parent_not_available or plugin.parent_id in plugin_lookup
 
         if valid_parent and plugin.pk in plugin_lookup:
             yield plugin_lookup[plugin.pk]
@@ -44,15 +44,15 @@ def get_plugin_data(plugin, only_meta=False):
     else:
         plugin_fields = get_plugin_fields(plugin.plugin_type)
         _plugin_data = serializers.serialize(get_serializer_name(), (plugin,), fields=plugin_fields)[0]
-        custom_data = _plugin_data['fields']
+        custom_data = _plugin_data["fields"]
 
     plugin_data = {
-        'pk': plugin.pk,
-        'creation_date': plugin.creation_date,
-        'position': plugin.position,
-        'plugin_type': plugin.plugin_type,
-        'parent_id': plugin.parent_id,
-        'data': custom_data,
+        "pk": plugin.pk,
+        "creation_date": plugin.creation_date,
+        "position": plugin.position,
+        "plugin_type": plugin.plugin_type,
+        "parent_id": plugin.parent_id,
+        "data": custom_data,
     }
 
     gpd = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA", None)

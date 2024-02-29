@@ -47,7 +47,7 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
     for new_plugin in new_plugins:
         plugin_class = get_plugin_class(new_plugin.plugin_type)
 
-        if getattr(plugin_class, '_has_do_post_copy', False):
+        if getattr(plugin_class, "_has_do_post_copy", False):
             # getattr is used for django CMS 3.4 compatibility
             # apps on 3.4 wishing to leverage this callback will need
             # to manually set the _has_do_post_copy attribute.
