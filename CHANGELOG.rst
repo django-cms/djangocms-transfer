@@ -2,6 +2,23 @@
 Changelog
 =========
 
+1.0.2 (2024-02-29)
+==================
+
+Changes
+-------
+
+* make export filenames a bit more unique by @arneb in https://github.com/django-cms/djangocms-transfer/pull/15
+* added customization of export/import data via user defined functions by @wfehr in https://github.com/django-cms/djangocms-transfer/pull/20
+* Fix error on export when getting filename by @wfehr in https://github.com/django-cms/djangocms-transfer/pull/33
+* Improved testing environment and fixed existing errors by @wfehr in https://github.com/django-cms/djangocms-transfer/pull/35
+
+New Contributors
+----------------
+
+* @wfehr made their first contribution in https://github.com/django-cms/djangocms-transfer/pull/20
+
+
 1.0.1 (2023-03-13)
 ==================
 
