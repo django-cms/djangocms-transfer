@@ -110,8 +110,13 @@ You can run tests by executing::
 
     virtualenv env
     source env/bin/activate
-    pip install -r tests/requirements.txt
+    pip install -r tests/requirements/base.txt
     python setup.py test
+
+For code formatting, `black` is used. To automatically fix errors reported from
+`black`, you can install it via virtualenv and
+`pip install -r tests/requirements/base.txt`.
+After this you just need to run `tools/black`.
 
 
 .. |pypi| image:: https://badge.fury.io/py/djangocms-transfer.svg

@@ -7,8 +7,7 @@ from cms.plugin_pool import plugin_pool
 def get_local_fields(model):
     opts = model._meta.concrete_model._meta
     fields = opts.local_fields
-    return [field.name for field in fields
-            if not field.is_relation and not field.primary_key]
+    return [field.name for field in fields if not field.is_relation and not field.primary_key]
 
 
 @lru_cache()
