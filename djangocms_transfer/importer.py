@@ -1,7 +1,6 @@
 from django.db import transaction
 
 from cms.models import CMSPlugin
-from cms.utils.plugins import reorder_plugins
 
 from .utils import get_plugin_class
 
@@ -16,8 +15,6 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
         source_map[root_plugin_id] = root_plugin
     else:
         root_plugin = None
-
-    tree_order = placeholder.get_plugin_tree_order(language, parent_id=root_plugin_id)
 
     for archived_plugin in plugins:
         # custom handling via "get_plugin_data" can lead to "null"-values
@@ -40,8 +37,6 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
         )
         source_map[archived_plugin.pk] = plugin
 
-        if parent == root_plugin:
-            tree_order.append(plugin.pk)
         new_plugins.append(plugin)
 
     for new_plugin in new_plugins:
@@ -52,14 +47,6 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
             # apps on 3.4 wishing to leverage this callback will need
             # to manually set the _has_do_post_copy attribute.
             plugin_class.do_post_copy(new_plugin, source_map)
-
-    reorder_plugins(
-        placeholder,
-        parent_id=root_plugin_id,
-        language=language,
-        order=tree_order,
-    )
-    placeholder.mark_as_dirty(language, clear_cache=False)
 
 
 @transaction.atomic
