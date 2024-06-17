@@ -26,7 +26,7 @@ def export_page(cms_page, language):
 
 def get_plugin_export_data(plugin):
     get_data = helpers.get_plugin_data
-    descendants = plugin.get_descendants().order_by("path")
+    descendants = plugin.get_descendants()
     plugin_data = [get_data(plugin=plugin)]
     plugin_data[0]["parent_id"] = None
     plugin_data.extend(
