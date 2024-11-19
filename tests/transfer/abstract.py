@@ -1,11 +1,11 @@
+from cms.test_utils.testcases import CMSTestCase
 from freezegun import freeze_time
 
-from app_helper.base_test import BaseTestCase
 from cms.api import add_plugin, create_page
 
 
 @freeze_time("2024-02-28 00:00:00")
-class FunctionalityBaseTestCase(BaseTestCase):
+class FunctionalityBaseTestCase(CMSTestCase):
     def setUp(self):
         self.page = self._create_page()
         self.page_content = self.page.pagecontent_set(manager="admin_manager").first()

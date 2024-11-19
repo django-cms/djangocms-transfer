@@ -45,7 +45,7 @@ classifiers = [
 Homepage = "https://github.com/django-cms/djangocms-transfer"
 
 [tool.setuptools]
-packages = [ "djangocms_link" ]
+packages = [ "djangocms_transfer" ]
 
 [tool.setuptools.dynamic]
 version = { attr = "djangocms_transfer.__version__" }

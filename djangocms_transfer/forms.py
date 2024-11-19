@@ -68,15 +68,21 @@ class ExportImportForm(forms.Form):
             raise forms.ValidationError(message)
 
         if cms_page and (plugin or placeholder):
-            message = _("Plugins can be imported to pages, plugins or placeholders. Not all three.")
+            message = _(
+                "Plugins can be imported to pages, plugins or placeholders. Not all three."
+            )
             raise forms.ValidationError(message)
 
         if placeholder and (cms_page or plugin):
-            message = _("Plugins can be imported to pages, plugins or placeholders. Not all three.")
+            message = _(
+                "Plugins can be imported to pages, plugins or placeholders. Not all three."
+            )
             raise forms.ValidationError(message)
 
         if plugin and (cms_page or placeholder):
-            message = _("Plugins can be imported to pages, plugins or placeholders. Not all three.")
+            message = _(
+                "Plugins can be imported to pages, plugins or placeholders. Not all three."
+            )
             raise forms.ValidationError(message)
 
         if plugin:
