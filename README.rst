@@ -57,6 +57,16 @@ For a manual install:
 * run ``python manage.py migrate djangocms_transfer``
 
 
+Version Compatibility
+-------------------
+
+This version (1.x) of djangocms-transfer is compatible with:
+
+* django CMS 3.7 through 3.11
+
+For django CMS 4.0 or later, you must use djangocms-transfer 2.0 or later.
+
+
 Customization
 -------------
 
@@ -128,7 +138,7 @@ After this you just need to run `tools/black`.
 
 .. |python| image:: https://img.shields.io/badge/python-3.5+-blue.svg
     :target: https://pypi.org/project/djangocms-transfer/
-.. |django| image:: https://img.shields.io/badge/django-2.2,%203.0,%203.1-blue.svg
+.. |django| image:: https://img.shields.io/badge/django-3.0,%203.1,%203.2,%204.0,%204.1-blue.svg
     :target: https://www.djangoproject.com/
-.. |djangocms| image:: https://img.shields.io/badge/django%20CMS-3.7%2B-blue.svg
+.. |djangocms| image:: https://img.shields.io/badge/django%20CMS-3.7--3.11-blue.svg
     :target: https://www.django-cms.org/
