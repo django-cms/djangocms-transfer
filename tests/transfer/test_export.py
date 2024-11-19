@@ -30,8 +30,6 @@ class ExportTest(FunctionalityBaseTestCase):
             self.assertEqual(self._get_expected_placeholder_export_data(), actual)
 
     def test_export_page(self):
-        page = self.page
-
         with self.subTest("empty page"):
             actual = json.loads(export_page(self.page_content, "en"))
             self.assertEqual([{"placeholder": "content", "plugins": []}], actual)

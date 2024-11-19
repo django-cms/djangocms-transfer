@@ -13,7 +13,6 @@ from .abstract import FunctionalityBaseTestCase
 
 class PluginExportFormTest(FunctionalityBaseTestCase):
     def test_get_filename(self):
-        page = self.page
         placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
@@ -48,7 +47,6 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             self.assertEqual("plugins.json", form.get_filename())
 
     def test_validation(self):
-        page = self.page
         placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
@@ -68,7 +66,9 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             )
 
         with self.subTest("cms_pagecontent + placeholder given"):
-            form = PluginExportForm(data={"language": "en", "cms_pagecontent": self.page_content, "placeholder": placeholder})
+            form = PluginExportForm(
+                data={"language": "en", "cms_pagecontent": self.page_content, "placeholder": placeholder}
+            )
             self.assertEqual(
                 ["Plugins can be imported to pages, plugins or placeholders. Not all three."],
                 form.errors["__all__"],
@@ -82,7 +82,6 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             )
 
     def test_run_export(self):
-        page = self.page
         placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
