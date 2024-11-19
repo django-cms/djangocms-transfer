@@ -1,11 +1,11 @@
 from collections import namedtuple
 
-from django.conf import settings
 from django.core.serializers import deserialize
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 
+from cms.api import add_plugin
 from cms.models import CMSPlugin
 
 from . import get_serializer_name
@@ -36,33 +36,43 @@ class ArchivedPlugin(BaseArchivedPlugin):
         return list(deserialize(get_serializer_name(), [data]))[0]
 
     @transaction.atomic
-    def restore(self, placeholder, language, parent=None, with_data=True):
-        parent_id = parent.pk if parent else None
-        plugin_kwargs = {
-            "plugin_type": self.plugin_type,
-            "placeholder": placeholder,
-            "language": language,
-            "parent_id": parent_id,
-            "position": self.position,
-        }
+    def restore(self, placeholder, language, parent=None):
+        m2m_data = {}
+        data = self.data.copy()
 
-        if parent:
-            plugin = parent.add_child(**plugin_kwargs)
-        else:
-            plugin = CMSPlugin.add_root(**plugin_kwargs)
+        if self.model is not CMSPlugin:
+            fields = self.model._meta.get_fields()
+            for field in fields:
+                if field.related_model is not None:
+                    if field.many_to_many:
+                        if data.get(field.name):
+                            m2m_data[field.name] = data[field.name]
+                        data.pop(field.name, None)
+                    elif data.get(field.name):
+                        try:
+                            obj = field.related_model.objects.get(pk=data[field.name])
+                        except field.related_model.DoesNotExist:
+                            obj = None
+                        data[field.name] = obj
 
-        if with_data and self.plugin_type != "CMSPlugin":
-            _d_instance = self.deserialized_instance
-            _d_instance.object._no_reorder = True
-            _d_instance.object.cmsplugin_ptr = plugin
-            plugin.set_base_attr(_d_instance.object)
+        plugin = add_plugin(
+            placeholder,
+            self.plugin_type,
+            language,
+            position="last-child",
+            target=parent,
+            **data,
+        )
 
-            # customize plugin-data on import with configured function
-            pps = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA", None)
-            if pps:
-                module, function = pps.rsplit(".", 1)
-                getattr(__import__(module, fromlist=[""]), function)(_d_instance)
+        if self.model is not CMSPlugin:
+            fields = self.model._meta.get_fields()
+            for field in fields:
+                if field.related_model is not None and m2m_data.get(field.name):
+                    if field.many_to_many:
+                        objs = field.related_model.objects.filter(
+                            pk__in=m2m_data[field.name]
+                        )
+                        attr = getattr(plugin, field.name)
+                        attr.set(objs)
 
-            _d_instance.save()
-            return _d_instance.object
         return plugin

@@ -1,5 +1,4 @@
 import functools
-import itertools
 import json
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -27,10 +26,12 @@ def export_page(cms_page, language):
 
 def get_plugin_export_data(plugin):
     get_data = helpers.get_plugin_data
-    descendants = plugin.get_descendants().order_by("path")
+    descendants = plugin.get_descendants()
     plugin_data = [get_data(plugin=plugin)]
     plugin_data[0]["parent_id"] = None
-    plugin_data.extend(get_data(plugin) for plugin in helpers.get_bound_plugins(descendants))
+    plugin_data.extend(
+        get_data(plugin) for plugin in helpers.get_bound_plugins(descendants)
+    )
     return plugin_data
 
 
@@ -40,10 +41,7 @@ def get_placeholder_export_data(placeholder, language):
     # The following results in two queries;
     # First all the root plugins are fetched, then all child plugins.
     # This is needed to account for plugin path corruptions.
-    plugins = itertools.chain(
-        plugins.filter(depth=1).order_by("position"),
-        plugins.filter(depth__gt=1).order_by("path"),
-    )
+
     return [get_data(plugin) for plugin in helpers.get_bound_plugins(list(plugins))]
 
 
