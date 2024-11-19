@@ -37,7 +37,7 @@ class PluginImporter(CMSToolbar):
         data = urlencode(
             {
                 "language": self.current_lang,
-                "cms_page": obj.pk,
+                "cms_pagecontent": obj.pk,
             }
         )
 

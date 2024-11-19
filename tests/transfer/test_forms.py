@@ -20,7 +20,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
         data = {
             "plugin": plugin,
             "placeholder": placeholder,
-            "cms_page": page,
+            "cms_pagecontent": self.page_content,
             "language": "en",
         }
 
@@ -30,7 +30,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             self.assertEqual("home.json", form.get_filename())
 
         with self.subTest("filename from placeholder"):
-            data["cms_page"] = None
+            data["cms_pagecontent"] = None
             form = PluginExportForm(data=data)
             form.clean()
             self.assertEqual("home_content.json", form.get_filename())
@@ -60,15 +60,15 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             form = PluginExportForm(data={"language": "en"})
             self.assertEqual(["A plugin, placeholder or page is required."], form.errors["__all__"])
 
-        with self.subTest("cms_page + plugin given"):
-            form = PluginExportForm(data={"language": "en", "cms_page": page, "plugin": plugin})
+        with self.subTest("cms_pagecontent + plugin given"):
+            form = PluginExportForm(data={"language": "en", "cms_pagecontent": self.page_content, "plugin": plugin})
             self.assertEqual(
                 ["Plugins can be imported to pages, plugins or placeholders. Not all three."],
                 form.errors["__all__"],
             )
 
-        with self.subTest("cms_page + placeholder given"):
-            form = PluginExportForm(data={"language": "en", "cms_page": page, "placeholder": placeholder})
+        with self.subTest("cms_pagecontent + placeholder given"):
+            form = PluginExportForm(data={"language": "en", "cms_pagecontent": self.page_content, "placeholder": placeholder})
             self.assertEqual(
                 ["Plugins can be imported to pages, plugins or placeholders. Not all three."],
                 form.errors["__all__"],
@@ -108,7 +108,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             self.assertEqual(self._get_expected_placeholder_export_data(), actual)
 
         with self.subTest("export page"):
-            data["cms_page"] = page
+            data["cms_pagecontent"] = self.page_content
             data["placeholder"] = None
             form = PluginExportForm(data=data)
             form.clean()

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
-from cms.models import CMSPlugin, Page, Placeholder
+from cms.models import CMSPlugin, PageContent, Placeholder
 
 from .datastructures import ArchivedPlaceholder, ArchivedPlugin
 from .exporter import export_page, export_placeholder, export_plugin
@@ -44,8 +44,8 @@ class ExportImportForm(forms.Form):
         required=False,
         widget=forms.HiddenInput(),
     )
-    cms_page = forms.ModelChoiceField(
-        queryset=Page.objects.all(),
+    cms_pagecontent = forms.ModelChoiceField(
+        queryset=PageContent.admin_manager.latest_content(),
         required=False,
         widget=forms.HiddenInput(),
     )
@@ -61,25 +61,25 @@ class ExportImportForm(forms.Form):
 
         plugin = self.cleaned_data.get("plugin")
         placeholder = self.cleaned_data.get("placeholder")
-        cms_page = self.cleaned_data.get("cms_page")
+        cms_pagecontent = self.cleaned_data.get("cms_pagecontent")
 
-        if not any([plugin, placeholder, cms_page]):
+        if not any([plugin, placeholder, cms_pagecontent]):
             message = _("A plugin, placeholder or page is required.")
             raise forms.ValidationError(message)
 
-        if cms_page and (plugin or placeholder):
+        if cms_pagecontent and (plugin or placeholder):
             message = _(
                 "Plugins can be imported to pages, plugins or placeholders. Not all three."
             )
             raise forms.ValidationError(message)
 
-        if placeholder and (cms_page or plugin):
+        if placeholder and (cms_pagecontent or plugin):
             message = _(
                 "Plugins can be imported to pages, plugins or placeholders. Not all three."
             )
             raise forms.ValidationError(message)
 
-        if plugin and (cms_page or placeholder):
+        if plugin and (cms_pagecontent or placeholder):
             message = _(
                 "Plugins can be imported to pages, plugins or placeholders. Not all three."
             )
@@ -100,12 +100,12 @@ class PluginExportForm(ExportImportForm):
     def get_filename(self):
         data = self.cleaned_data
         language = data["language"]
-        page = data["cms_page"]
+        cms_pagecontent = data["cms_pagecontent"]
         plugin = data["plugin"]
         placeholder = data["placeholder"]
 
-        if page:
-            return "{}.json".format(page.get_slug(language=language))
+        if cms_pagecontent:
+            return "{}.json".format(cms_pagecontent.page.get_slug(language=language))
         elif placeholder and placeholder.page is not None:
             return "{}_{}.json".format(
                 placeholder.page.get_slug(language=language),
@@ -130,7 +130,7 @@ class PluginExportForm(ExportImportForm):
 
         if placeholder:
             return export_placeholder(placeholder, language)
-        return export_page(data["cms_page"], language)
+        return export_page(data["cms_pagecontent"], language)
 
 
 class PluginImportForm(ExportImportForm):
@@ -149,7 +149,7 @@ class PluginImportForm(ExportImportForm):
 
         first_item = data[0]
         is_placeholder = isinstance(first_item, ArchivedPlaceholder)
-        page_import = bool(self.cleaned_data["cms_page"])
+        page_import = bool(self.cleaned_data["cms_pagecontent"])
         plugins_import = not page_import
 
         if (is_placeholder and plugins_import) or (page_import and not is_placeholder):
@@ -161,7 +161,7 @@ class PluginImportForm(ExportImportForm):
     def run_import(self):
         data = self.cleaned_data
         language = data["language"]
-        target_page = data["cms_page"]
+        target_page = data["cms_pagecontent"]
         target_plugin = data["plugin"]
         target_placeholder = data["placeholder"]
 
