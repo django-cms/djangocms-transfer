@@ -4,4 +4,5 @@ tox
 coverage
 black
 freezegun
-djangocms-text-ckeditor
+djangocms-text
+pytest

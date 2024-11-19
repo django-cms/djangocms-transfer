@@ -12,7 +12,6 @@ from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
-from .compat import LTE_CMS_3_4
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
 
@@ -157,9 +156,6 @@ class PluginImporter(CMSPluginBase):
         tree_order = placeholder.get_plugin_tree_order(language, parent_id=root_id)
         # TODO: Check permissions
         import_form.run_import()
-
-        if LTE_CMS_3_4:
-            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
 
         if plugin:
             new_plugins = plugin.reload().get_descendants().exclude(pk__in=tree_order)

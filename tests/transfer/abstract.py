@@ -8,6 +8,7 @@ from cms.api import add_plugin, create_page
 class FunctionalityBaseTestCase(BaseTestCase):
     def setUp(self):
         self.page = self._create_page()
+        self.page_content = self.page.pagecontent_set(manager="admin_manager").first()
         self.page.set_as_homepage()
 
     def _create_plugin(self, parent=None):
@@ -31,7 +32,11 @@ class FunctionalityBaseTestCase(BaseTestCase):
         if page is None:
             page = self.page
         return add_plugin(
-            page.placeholders.get(slot="content"),
+            page.pagecontent_set(manager="admin_manager")
+            .filter(language="en")
+            .first()
+            .get_placeholders()
+            .get(slot="content"),
             plugin_publisher,
             "en",
             *args,
@@ -50,10 +55,10 @@ class FunctionalityBaseTestCase(BaseTestCase):
             {
                 "pk": 1,
                 "creation_date": "2024-02-28T00:00:00Z",
-                "position": 0,
+                "position": 1,
                 "plugin_type": "TextPlugin",
                 "parent_id": None,
-                "data": {"body": "Hello World!"},
+                "data": {'body': 'Hello World!', 'json': None, 'rte': ''},
             },
         ]
 

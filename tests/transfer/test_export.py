@@ -18,7 +18,7 @@ class ExportTest(FunctionalityBaseTestCase):
         self.assertEqual(self._get_expected_plugin_export_data(), actual)
 
     def test_export_placeholder(self):
-        placeholder = self.page.placeholders.get(slot="content")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
 
         with self.subTest("empty placeholder"):
             actual = json.loads(export_placeholder(placeholder, "en"))

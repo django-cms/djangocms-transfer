@@ -14,7 +14,7 @@ from .abstract import FunctionalityBaseTestCase
 class PluginExportFormTest(FunctionalityBaseTestCase):
     def test_get_filename(self):
         page = self.page
-        placeholder = page.placeholders.get(slot="content")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
         data = {
@@ -49,7 +49,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
 
     def test_validation(self):
         page = self.page
-        placeholder = page.placeholders.get(slot="content")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
         with self.subTest("language missing"):
@@ -83,7 +83,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
 
     def test_run_export(self):
         page = self.page
-        placeholder = page.placeholders.get(slot="content")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
         data = {
@@ -119,7 +119,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
 class PluginImportFormTest(FunctionalityBaseTestCase):
     def test_validation(self):
         page = self.page
-        placeholder = page.placeholders.get(slot="content")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
         file_ = self._get_file()
 
@@ -169,7 +169,7 @@ class PluginImportFormTest(FunctionalityBaseTestCase):
         # TODO: when setting the form, the `form.errors` is filled for "missing
         # import_file" although it is given/set in `data`
         page = self.page
-        placeholder = page.placeholders.get(slot="content")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
         file_ = self._get_file()
 

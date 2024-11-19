@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "djangocms-transfer"
+description = "Adds import and export of plugin data."
+dependencies = [
+    "django-cms>=4.1",
+]
+dynamic = [ "version" ]
+readme = "README.rst"
+requires-python = ">=3.9"
+license = {text = "BSD-3-Clause"}
+authors = [
+    {name = "Divio AG", email = "info@divio.ch"},
+]
+maintainers = [
+    {name = "Django CMS Association and contributors", email = "info@django-cms.org"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django CMS",
+    "Framework :: Django CMS :: 4.1",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/django-cms/djangocms-transfer"
+
+[tool.setuptools]
+packages = [ "djangocms_link" ]
+
+[tool.setuptools.dynamic]
+version = { attr = "djangocms_transfer.__version__" }
+
+[tool.flake8]
+max-line-length = 119
+exclude = [
+    "*.egg-info",
+    ".eggs",
+    ".git",
+    ".settings",
+    ".tox",
+    ".venv",
+    "build",
+    "data",
+    "dist",
+    "docs",
+    "*migrations*",
+    "requirements",
+    "tmp"
+]
+
+[tools.isort]
+line_length = 119
+skip = ["manage.py", "*migrations*", ".tox", ".eggs", "data"]
+include_trailing_comma = true
+multi_line_output = 5
+lines_after_imports = 2

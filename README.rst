@@ -2,16 +2,17 @@
 django CMS Transfer
 ===================
 
-|pypi| |build| |coverage|
+|pypi| |build| |coverage| |python| |django| |djangocms|
+
 
 **django CMS Transfer** is an **experimental** package that allows you to export
 and import plugin data from a page or a placeholder. It does not support foreign
 key relations and won't import/export related data, such as `media <https://github.com/django-cms/djangocms-transfer/issues/18>`_.
 
-.. note:: 
-        
+.. note::
+
         This project is endorsed by the `django CMS Association <https://www.django-cms.org/en/about-us/>`_.
-        That means that it is officially accepted by the dCA as being in line with our roadmap vision and development/plugin policy. 
+        That means that it is officially accepted by the dCA as being in line with our roadmap vision and development/plugin policy.
         Join us on `Slack <https://www.django-cms.org/slack/>`_.
 
 .. image:: preview.gif
@@ -23,8 +24,8 @@ Contribute to this project and win rewards
 
 Because this is a an open-source project, we welcome everyone to
 `get involved in the project <https://www.django-cms.org/en/contribute/>`_ and
-`receive a reward <https://www.django-cms.org/en/bounty-program/>`_ for their contribution. 
-Become part of a fantastic community and help us make django CMS the best CMS in the world.   
+`receive a reward <https://www.django-cms.org/en/bounty-program/>`_ for their contribution.
+Become part of a fantastic community and help us make django CMS the best CMS in the world.
 
 We'll be delighted to receive your
 feedback in the form of issues and pull requests. Before submitting your
@@ -39,12 +40,11 @@ section.
 Documentation
 =============
 
-The setting ``DJANGO_CMS_TRANSFER_SERIALIZER`` allows to register a custom json serializer. An example for an use case could be to subclass Django's build-in python serializer and let it base64-encode inline image data base64. 
+The setting ``DJANGO_CMS_TRANSFER_SERIALIZER`` allows to register a custom json serializer. An example for an use case could be to subclass Django's build-in python serializer and let it base64-encode inline image data base64.
 
 See ``REQUIREMENTS`` in the `setup.py <https://github.com/divio/djangocms-transfer/blob/master/setup.py>`_
 file for additional dependencies:
 
-|python| |django| |djangocms|
 
 
 Installation
@@ -131,14 +131,12 @@ After this you just need to run `tools/black`.
 
 .. |pypi| image:: https://badge.fury.io/py/djangocms-transfer.svg
     :target: http://badge.fury.io/py/djangocms-transfer
-.. |build| image:: https://travis-ci.org/divio/djangocms-transfer.svg?branch=master
-    :target: https://travis-ci.org/divio/djangocms-transfer
-.. |coverage| image:: https://codecov.io/gh/divio/djangocms-transfer/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/divio/djangocms-transfer
+.. |coverage| image:: https://codecov.io/gh/django-cms/djangocms-transfer/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/django-cms/djangocms-transfer
 
-.. |python| image:: https://img.shields.io/badge/python-3.5+-blue.svg
+.. |python| image:: https://img.shields.io/badge/python-3.9+-blue.svg
     :target: https://pypi.org/project/djangocms-transfer/
-.. |django| image:: https://img.shields.io/badge/django-3.0,%203.1,%203.2,%204.0,%204.1-blue.svg
+.. |django| image:: https://img.shields.io/badge/django-4.2,%205.0,%205.1-blue.svg
     :target: https://www.djangoproject.com/
-.. |djangocms| image:: https://img.shields.io/badge/django%20CMS-3.7--3.11-blue.svg
+.. |djangocms| image:: https://img.shields.io/badge/django%20CMS-4-blue.svg
     :target: https://www.django-cms.org/

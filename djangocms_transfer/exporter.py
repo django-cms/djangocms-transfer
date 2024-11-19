@@ -47,7 +47,7 @@ def get_placeholder_export_data(placeholder, language):
 
 def get_page_export_data(cms_page, language):
     data = []
-    placeholders = cms_page.rescan_placeholders().values()
+    placeholders = cms_page.rescan_placeholders("en").values()
 
     for placeholder in list(placeholders):
         plugins = get_placeholder_export_data(placeholder, language)

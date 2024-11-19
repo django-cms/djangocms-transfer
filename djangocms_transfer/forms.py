@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
-from cms.models import CMSPlugin, PageContent, Placeholder
+from cms.models import CMSPlugin, Page, Placeholder
 
 from .datastructures import ArchivedPlaceholder, ArchivedPlugin
 from .exporter import export_page, export_placeholder, export_plugin
@@ -45,7 +45,7 @@ class ExportImportForm(forms.Form):
         widget=forms.HiddenInput(),
     )
     cms_page = forms.ModelChoiceField(
-        queryset=PageContent.objects.all(),
+        queryset=Page.objects.all(),
         required=False,
         widget=forms.HiddenInput(),
     )
@@ -99,7 +99,7 @@ class PluginExportForm(ExportImportForm):
         placeholder = data["placeholder"]
 
         if page:
-            return "{}.json".format(page.page.get_slug(language=language))
+            return "{}.json".format(page.get_slug(language=language))
         elif placeholder and placeholder.page is not None:
             return "{}_{}.json".format(
                 placeholder.page.get_slug(language=language),
