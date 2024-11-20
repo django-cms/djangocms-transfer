@@ -2,7 +2,7 @@
 django CMS Transfer
 ===================
 
-|pypi| |build| |coverage| |python| |django| |djangocms|
+|pypi| |coverage| |python| |django| |djangocms|
 
 
 **django CMS Transfer** is an **experimental** package that allows you to export
@@ -58,13 +58,11 @@ For a manual install:
 
 
 Version Compatibility
--------------------
-
-This version (1.x) of djangocms-transfer is compatible with:
-
-* django CMS 3.7 through 3.11
+---------------------
 
 For django CMS 4.0 or later, you must use djangocms-transfer 2.0 or later.
+
+For django CMS 3.7 through 3.11 use versions 1.x of djangocms-transfer.
 
 
 Customization
