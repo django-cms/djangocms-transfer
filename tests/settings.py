@@ -2,7 +2,7 @@
 HELPER_SETTINGS = {
     "INSTALLED_APPS": [
         "djangocms_transfer",
-        "djangocms_text_ckeditor",
+        "djangocms_text",
     ],
     "CMS_LANGUAGES": {
         1: [
@@ -15,6 +15,7 @@ HELPER_SETTINGS = {
     "LANGUAGE_CODE": "en",
     "ALLOWED_HOSTS": ["localhost"],
     "DEFAULT_AUTO_FIELD": "django.db.models.AutoField",
+    "CMS_CONFIRM_VERSION4": True,
 }
 
 

@@ -19,8 +19,8 @@ def export_placeholder(placeholder, language):
     return dump_json(data)
 
 
-def export_page(cms_page, language):
-    data = get_page_export_data(cms_page, language)
+def export_page(cms_pagecontent, language):
+    data = get_page_export_data(cms_pagecontent, language)
     return dump_json(data)
 
 
@@ -45,9 +45,9 @@ def get_placeholder_export_data(placeholder, language):
     return [get_data(plugin) for plugin in helpers.get_bound_plugins(list(plugins))]
 
 
-def get_page_export_data(cms_page, language):
+def get_page_export_data(cms_pagecontent, language):
     data = []
-    placeholders = cms_page.rescan_placeholders().values()
+    placeholders = cms_pagecontent.rescan_placeholders().values()
 
     for placeholder in list(placeholders):
         plugins = get_placeholder_export_data(placeholder, language)

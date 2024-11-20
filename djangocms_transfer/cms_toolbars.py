@@ -1,10 +1,11 @@
+from django.utils.http import urlencode
+from django.utils.translation import gettext
+
 from cms.models import PageContent
 from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.utils.page_permissions import user_can_change_page
 from cms.utils.urlutils import admin_reverse
-from django.utils.http import urlencode
-from django.utils.translation import gettext
 
 
 @toolbar_pool.register
@@ -36,7 +37,7 @@ class PluginImporter(CMSToolbar):
         data = urlencode(
             {
                 "language": self.current_lang,
-                "cms_page": obj.pk,
+                "cms_pagecontent": obj.pk,
             }
         )
 

@@ -12,7 +12,6 @@ from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
-from .compat import LTE_CMS_3_4
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
 
@@ -152,18 +151,19 @@ class PluginImporter(CMSPluginBase):
             # Page placeholders/plugins import
             # TODO: Check permissions
             import_form.run_import()
-            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
+            return HttpResponse(
+                '<div><div class="messagelist"><div class="success"></div></div></div>'
+            )
 
         tree_order = placeholder.get_plugin_tree_order(language, parent_id=root_id)
         # TODO: Check permissions
         import_form.run_import()
 
-        if LTE_CMS_3_4:
-            return HttpResponse('<div><div class="messagelist"><div class="success"></div></div></div>')
-
         if plugin:
             new_plugins = plugin.reload().get_descendants().exclude(pk__in=tree_order)
-            return plugin.get_plugin_class_instance().render_close_frame(request, obj=new_plugins[0])
+            return plugin.get_plugin_class_instance().render_close_frame(
+                request, obj=new_plugins[0]
+            )
 
         from cms.toolbar.utils import get_plugin_tree_as_json
 
@@ -173,7 +173,9 @@ class PluginImporter(CMSPluginBase):
         data["plugin_order"] = tree_order + ["__COPY__"]
         data["target_placeholder_id"] = placeholder.pk
         context = {"structure_data": json.dumps(data)}
-        return render(request, "djangocms_transfer/placeholder_close_frame.html", context)
+        return render(
+            request, "djangocms_transfer/placeholder_close_frame.html", context
+        )
 
     @classmethod
     def export_plugins_view(cls, request):

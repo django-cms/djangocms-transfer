@@ -51,7 +51,7 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
 
 @transaction.atomic
 def import_plugins_to_page(placeholders, page, language):
-    page_placeholders = page.rescan_placeholders()
+    page_placeholders = page.rescan_placeholders(language)
 
     for archived_placeholder in placeholders:
         plugins = archived_placeholder.plugins

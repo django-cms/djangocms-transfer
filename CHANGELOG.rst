@@ -2,6 +2,14 @@
 Changelog
 =========
 
+2.0.0 (2024-11-20)
+==================
+
+* Add support for django CMS 4
+* Drop support for django CMS 3.7 - 3.11
+* Add support for Django 4.2, 5.0 and 5.1
+
+
 1.0.2 (2024-02-29)
 ==================
 

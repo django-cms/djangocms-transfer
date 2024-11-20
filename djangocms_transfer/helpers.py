@@ -30,7 +30,9 @@ def get_bound_plugins(plugins):
             plugin_lookup[instance.pk] = instance
 
     for plugin in plugins:
-        parent_not_available = not plugin.parent_id or plugin.parent_id not in plugin_ids
+        parent_not_available = (
+            not plugin.parent_id or plugin.parent_id not in plugin_ids
+        )
         # The plugin either has no parent or needs to have a non-ghost parent
         valid_parent = parent_not_available or plugin.parent_id in plugin_lookup
 
@@ -43,7 +45,9 @@ def get_plugin_data(plugin, only_meta=False):
         custom_data = None
     else:
         plugin_fields = get_plugin_fields(plugin.plugin_type)
-        _plugin_data = serializers.serialize(get_serializer_name(), (plugin,), fields=plugin_fields)[0]
+        _plugin_data = serializers.serialize(
+            get_serializer_name(), (plugin,), fields=plugin_fields
+        )[0]
         custom_data = _plugin_data["fields"]
 
     plugin_data = {

@@ -1,4 +1,4 @@
-__version__ = '1.0.2'
+__version__ = "2.0.0a"
 
 default_app_config = "djangocms_transfer.apps.TranferConfig"
 
