@@ -7,7 +7,6 @@ from django.core.files import File
 
 from djangocms_transfer.forms import PluginExportForm, PluginImportForm
 
-
 from .abstract import FunctionalityBaseTestCase
 
 

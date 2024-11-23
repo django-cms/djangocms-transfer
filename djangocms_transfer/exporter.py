@@ -5,7 +5,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from . import helpers
 
-
 dump_json = functools.partial(json.dumps, cls=DjangoJSONEncoder)
 
 
