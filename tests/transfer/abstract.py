@@ -1,7 +1,6 @@
+from cms.api import add_plugin, create_page
 from cms.test_utils.testcases import CMSTestCase
 from freezegun import freeze_time
-
-from cms.api import add_plugin, create_page
 
 
 @freeze_time("2024-02-28 00:00:00")

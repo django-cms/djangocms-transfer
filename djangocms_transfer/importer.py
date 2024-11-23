@@ -1,6 +1,5 @@
-from django.db import transaction
-
 from cms.models import CMSPlugin
+from django.db import transaction
 
 from .utils import get_plugin_class
 

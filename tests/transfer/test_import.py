@@ -1,8 +1,8 @@
 import json
 
 from djangocms_transfer.datastructures import (
-    ArchivedPlugin,
     ArchivedPlaceholder,
+    ArchivedPlugin,
 )
 from djangocms_transfer.exporter import export_placeholder, export_plugin
 from djangocms_transfer.importer import import_plugins, import_plugins_to_page
