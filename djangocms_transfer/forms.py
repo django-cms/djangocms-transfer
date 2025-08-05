@@ -173,7 +173,7 @@ class PluginImportForm(ExportImportForm):
         if target_page:
             import_plugins_to_page(
                 placeholders=data["import_data"],
-                page=target_page,
+                pagecontent=target_page,
                 language=language,
             )
         else:

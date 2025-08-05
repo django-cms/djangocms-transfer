@@ -12,8 +12,8 @@ from .abstract import FunctionalityBaseTestCase
 
 class ImportTest(FunctionalityBaseTestCase):
     def test_import(self):
-        page = self.page
-        placeholder = self.page_content.get_placeholders().get(slot="content")
+        pagecontent = self.page_content
+        placeholder = pagecontent.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
 
         plugin_data = ArchivedPlugin(**json.loads(export_plugin(plugin))[0])
@@ -29,4 +29,4 @@ class ImportTest(FunctionalityBaseTestCase):
             import_plugins(placeholder_data.plugins, placeholder, "en")
 
         with self.subTest("import page"):
-            import_plugins_to_page([placeholder_data], page, "en")
+            import_plugins_to_page([placeholder_data], pagecontent, "en")
