@@ -53,6 +53,10 @@ class ArchivedPlugin(BaseArchivedPlugin):
                             obj = None
                         data[field.name] = obj
 
+        # The "data" field for LinkPlugin have key, "target"
+        # which clashes with :func:add_plugin when unpacked.
+        plugin_target = data.pop("target", "")
+
         plugin = add_plugin(
             placeholder,
             self.plugin_type,
@@ -61,6 +65,11 @@ class ArchivedPlugin(BaseArchivedPlugin):
             target=parent,
             **data,
         )
+
+        field = ("target",) if plugin_target else ()
+        # An empty *update_fields* iterable will skip the save
+        plugin.target = plugin_target
+        plugin.save(update_fields=field)
 
         if self.model is not CMSPlugin:
             fields = self.model._meta.get_fields()
