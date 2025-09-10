@@ -133,7 +133,10 @@ class PluginExportForm(ExportImportForm):
 
 
 class PluginImportForm(ExportImportForm):
-    import_file = forms.FileField(required=True)
+    import_file = forms.FileField(
+        required=True,
+        widget=forms.FileInput(attrs={"accept": "application/json"}),
+    )
 
     def clean(self):
         if self.errors:
