@@ -2,6 +2,7 @@ from collections import namedtuple
 
 from cms.api import add_plugin
 from cms.models import CMSPlugin
+from django.conf import settings
 from django.core.serializers import deserialize
 from django.db import transaction
 from django.utils.encoding import force_str
@@ -82,4 +83,11 @@ class ArchivedPlugin(BaseArchivedPlugin):
                         attr = getattr(plugin, field.name)
                         attr.set(objs)
 
+        # customize plugin-data on import with configured function
+        pps = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA", None)
+        if pps:
+            module, function = pps.rsplit(".", 1)
+            getattr(__import__(module, fromlist=[""]), function)(plugin)
+
+        plugin.save()
         return plugin
