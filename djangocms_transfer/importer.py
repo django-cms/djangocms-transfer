@@ -1,8 +1,6 @@
 from cms.models import CMSPlugin
 from django.db import transaction
 
-from .utils import get_plugin_class
-
 
 @transaction.atomic
 def import_plugins(plugins, placeholder, language, root_plugin_id=None):

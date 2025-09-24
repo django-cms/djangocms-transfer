@@ -6,3 +6,6 @@ freezegun
 djangocms-text
 pytest
 pytest-django
+
+# for testing purposes
+djangocms-link

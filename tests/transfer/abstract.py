@@ -5,17 +5,26 @@ from freezegun import freeze_time
 
 @freeze_time("2024-02-28 00:00:00")
 class FunctionalityBaseTestCase(CMSTestCase):
+
+    TEXT_BODY = "Hello World!"
+
     def setUp(self):
         self.page = self._create_page()
         self.page_content = self.page.pagecontent_set(manager="admin_manager").first()
         self.page.set_as_homepage()
 
-    def _create_plugin(self, parent=None):
+    def _create_plugin(self, plugin_type="TextPlugin", parent=None, **kwargs):
+        if plugin_type == "TextPlugin":
+            kwargs["body"] = self.TEXT_BODY
+        elif plugin_type == "LinkPlugin":
+            kwargs["name"] =  plugin_type.lower()
+            kwargs["link"] = {"external_link": "https://www.django-cms.org"}
+
         return self._add_plugin_to_page(
-            "TextPlugin",
+            plugin_type,
             "last-child",
             parent,
-            body="Hello World!",
+            **kwargs
         )
 
     def _create_page(self, **kwargs):
