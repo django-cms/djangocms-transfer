@@ -109,7 +109,7 @@ You can run tests by executing::
     python -m venv env
     source env/bin/activate
     pip install -r tests/requirements/dj51_cms41.txt
-    coverage run tests/settings.py
+    coverage run -m pytest
 
 
 *******************************************
