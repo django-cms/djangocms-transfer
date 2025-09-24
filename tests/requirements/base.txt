@@ -1,4 +1,8 @@
 # other requirements
-django-app-helper
 tox
 coverage
+black
+freezegun
+djangocms-text
+pytest
+pytest-django

@@ -1,11 +1,11 @@
 import json
 
+from cms.models import CMSPlugin, PageContent, Placeholder
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-
-from cms.models import CMSPlugin, Page, Placeholder
 
 from .datastructures import ArchivedPlaceholder, ArchivedPlugin
 from .exporter import export_page, export_placeholder, export_plugin
@@ -16,19 +16,19 @@ def _object_version_data_hook(data, for_page=False):
     if not data:
         return data
 
-    if 'plugins' in data:
+    if "plugins" in data:
         return ArchivedPlaceholder(
-            slot=data['placeholder'],
-            plugins=data['plugins'],
+            slot=data["placeholder"],
+            plugins=data["plugins"],
         )
 
-    if 'plugin_type' in data:
+    if "plugin_type" in data:
         return ArchivedPlugin(**data)
     return data
 
 
 def _get_parsed_data(file_obj, for_page=False):
-    raw = file_obj.read().decode('utf-8')
+    raw = file_obj.read().decode("utf-8")
     return json.loads(raw, object_hook=_object_version_data_hook)
 
 
@@ -43,8 +43,8 @@ class ExportImportForm(forms.Form):
         required=False,
         widget=forms.HiddenInput(),
     )
-    cms_page = forms.ModelChoiceField(
-        queryset=Page.objects.drafts(),
+    cms_pagecontent = forms.ModelChoiceField(
+        queryset=PageContent.admin_manager.latest_content(),
         required=False,
         widget=forms.HiddenInput(),
     )
@@ -58,24 +58,30 @@ class ExportImportForm(forms.Form):
         if self.errors:
             return self.cleaned_data
 
-        plugin = self.cleaned_data.get('plugin')
-        placeholder = self.cleaned_data.get('placeholder')
-        cms_page = self.cleaned_data.get('cms_page')
+        plugin = self.cleaned_data.get("plugin")
+        placeholder = self.cleaned_data.get("placeholder")
+        cms_pagecontent = self.cleaned_data.get("cms_pagecontent")
 
-        if not any([plugin, placeholder, cms_page]):
-            message = _('A plugin, placeholder or page is required.')
+        if not any([plugin, placeholder, cms_pagecontent]):
+            message = _("A plugin, placeholder or page is required.")
             raise forms.ValidationError(message)
 
-        if cms_page and (plugin or placeholder):
-            message = _('Plugins can be imported to pages, plugins or placeholders. Not all three.')
+        if cms_pagecontent and (plugin or placeholder):
+            message = _(
+                "Plugins can be imported to pages, plugins or placeholders. Not all three."
+            )
             raise forms.ValidationError(message)
 
-        if placeholder and (cms_page or plugin):
-            message = _('Plugins can be imported to pages, plugins or placeholders. Not all three.')
+        if placeholder and (cms_pagecontent or plugin):
+            message = _(
+                "Plugins can be imported to pages, plugins or placeholders. Not all three."
+            )
             raise forms.ValidationError(message)
 
-        if plugin and (cms_page or placeholder):
-            message = _('Plugins can be imported to pages, plugins or placeholders. Not all three.')
+        if plugin and (cms_pagecontent or placeholder):
+            message = _(
+                "Plugins can be imported to pages, plugins or placeholders. Not all three."
+            )
             raise forms.ValidationError(message)
 
         if plugin:
@@ -85,63 +91,78 @@ class ExportImportForm(forms.Form):
             plugin_is_bound = False
 
         if plugin and not plugin_is_bound:
-            raise ValidationError('Plugin is unbound.')
+            raise ValidationError("Plugin is unbound.")
         return self.cleaned_data
 
 
 class PluginExportForm(ExportImportForm):
-
     def get_filename(self):
-        if self.cleaned_data.get('cms_page'):
-            return 'cms_page_plugins.json'
-        return 'plugins.json'
+        data = self.cleaned_data
+        language = data["language"]
+        cms_pagecontent = data["cms_pagecontent"]
+        plugin = data["plugin"]
+        placeholder = data["placeholder"]
+
+        if cms_pagecontent:
+            return "{}.json".format(cms_pagecontent.page.get_slug(language=language))
+        elif placeholder and placeholder.page is not None:
+            return "{}_{}.json".format(
+                placeholder.page.get_slug(language=language),
+                slugify(placeholder.slot),
+            )
+        elif plugin is not None and plugin.page is not None:
+            return "{}_{}.json".format(
+                plugin.page.get_slug(language=language),
+                slugify(plugin.get_short_description()),
+            )
+        else:
+            return "plugins.json"
 
     def run_export(self):
         data = self.cleaned_data
-        language = data['language']
-        plugin = data['plugin']
-        placeholder = data['placeholder']
+        language = data["language"]
+        plugin = data["plugin"]
+        placeholder = data["placeholder"]
 
         if plugin:
             return export_plugin(plugin.get_bound_plugin())
 
         if placeholder:
             return export_placeholder(placeholder, language)
-        return export_page(data['cms_page'], language)
+        return export_page(data["cms_pagecontent"], language)
 
 
 class PluginImportForm(ExportImportForm):
-
     import_file = forms.FileField(required=True)
 
     def clean(self):
         if self.errors:
             return self.cleaned_data
 
-        import_file = self.cleaned_data['import_file']
+        import_file = self.cleaned_data["import_file"]
 
         try:
             data = _get_parsed_data(import_file)
         except (ValueError, TypeError):
-            raise ValidationError('File is not valid')
+            raise ValidationError("File is not valid")
 
         first_item = data[0]
         is_placeholder = isinstance(first_item, ArchivedPlaceholder)
-        page_import = bool(self.cleaned_data['cms_page'])
+        page_import = bool(self.cleaned_data["cms_pagecontent"])
         plugins_import = not page_import
 
         if (is_placeholder and plugins_import) or (page_import and not is_placeholder):
-            raise ValidationError('Incorrect json format used.')
+            raise ValidationError("Incorrect json format used.")
 
-        self.cleaned_data['import_data'] = data
+        self.cleaned_data["import_data"] = data
         return self.cleaned_data
 
     def run_import(self):
         data = self.cleaned_data
-        language = data['language']
-        target_page = data['cms_page']
-        target_plugin = data['plugin']
-        target_placeholder = data['placeholder']
+        language = data["language"]
+        target_page = data["cms_pagecontent"]
+        target_plugin = data["plugin"]
+        target_placeholder = data["placeholder"]
 
         if target_plugin:
             target_plugin_id = target_plugin.pk
@@ -151,13 +172,13 @@ class PluginImportForm(ExportImportForm):
 
         if target_page:
             import_plugins_to_page(
-                placeholders=data['import_data'],
-                page=target_page,
+                placeholders=data["import_data"],
+                pagecontent=target_page,
                 language=language,
             )
         else:
             import_plugins(
-                plugins=data['import_data'],
+                plugins=data["import_data"],
                 placeholder=target_placeholder,
                 language=language,
                 root_plugin_id=target_plugin_id,

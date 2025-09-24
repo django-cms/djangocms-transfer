@@ -7,9 +7,7 @@ from django.test import TestCase, override_settings
 
 
 class MigrationTestCase(TestCase):
-    @override_settings(
-        MIGRATION_MODULES={}, DEFAULT_AUTO_FIELD="django.db.models.AutoField"
-    )
+    @override_settings(MIGRATION_MODULES={}, DEFAULT_AUTO_FIELD="django.db.models.AutoField")
     def test_for_missing_migrations(self):
         output = StringIO()
         options = {
