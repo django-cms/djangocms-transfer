@@ -2,11 +2,10 @@ import functools
 import json
 
 from cms.utils.plugins import get_bound_plugins
-from django.conf import settings
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 
-from . import get_serializer_name
+from . import custom_process_hook, get_serializer_name
 from .utils import get_plugin_fields
 
 dump_json = functools.partial(json.dumps, cls=DjangoJSONEncoder)
@@ -31,12 +30,13 @@ def get_plugin_data(plugin, only_meta=False):
         "data": custom_data,
     }
 
-    gpd = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA", None)
-    if gpd:
-        module, function = gpd.rsplit(".", 1)
-        return getattr(__import__(module, fromlist=[""]), function)(plugin, plugin_data)
-    else:
-        return plugin_data
+    # customize plugin-data on export
+    return custom_process_hook(
+        "DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA",
+        plugin,
+        plugin_data
+    )
+
 
 def export_plugin(plugin):
     data = get_plugin_export_data(plugin)

@@ -2,8 +2,27 @@ import os
 import sys
 
 import django
+import pytest
 from django.conf import settings
 from django.test.utils import get_runner
+
+
+def transfer(first, second=None):
+    if second:
+        return first, second
+    return first
+
+
+@pytest.fixture
+def use_nonexistent_transfer_hook(settings):
+    settings.DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA = "a.b.c"
+    settings.DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA = "a.b.c"
+
+
+@pytest.fixture
+def use_existent_transfer_hook(settings):
+    settings.DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA = "tests.conftest.transfer"
+    settings.DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA = "tests.conftest.transfer"
 
 
 def pytest_configure():

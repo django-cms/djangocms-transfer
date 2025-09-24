@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 
-from . import get_serializer_name
+from . import custom_process_hook, get_serializer_name
 from .utils import get_plugin_model
 
 BaseArchivedPlugin = namedtuple(
@@ -84,10 +84,10 @@ class ArchivedPlugin(BaseArchivedPlugin):
                         attr.set(objs)
 
         # customize plugin-data on import with configured function
-        pps = getattr(settings, "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA", None)
-        if pps:
-            module, function = pps.rsplit(".", 1)
-            getattr(__import__(module, fromlist=[""]), function)(plugin)
+        custom_process_hook(
+            "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA",
+            plugin
+        )
 
         plugin.save()
         return plugin
