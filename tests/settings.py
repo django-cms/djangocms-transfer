@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "menus",
     "treebeard",
     "djangocms_text",
+    "djangocms_link",
     "djangocms_transfer",
 ]
 

@@ -1,8 +1,6 @@
 from cms.models import CMSPlugin
 from django.db import transaction
 
-from .utils import get_plugin_class
-
 
 @transaction.atomic
 def import_plugins(plugins, placeholder, language, root_plugin_id=None):
@@ -36,16 +34,11 @@ def import_plugins(plugins, placeholder, language, root_plugin_id=None):
         )
         source_map[archived_plugin.pk] = plugin
 
-        new_plugins.append(plugin)
+        new_plugins.append((plugin, archived_plugin))
 
-    for new_plugin in new_plugins:
-        plugin_class = get_plugin_class(new_plugin.plugin_type)
-
-        if getattr(plugin_class, "_has_do_post_copy", False):
-            # getattr is used for django CMS 3.4 compatibility
-            # apps on 3.4 wishing to leverage this callback will need
-            # to manually set the _has_do_post_copy attribute.
-            plugin_class.do_post_copy(new_plugin, source_map)
+    for new_plugin, _ in new_plugins:
+        # Replace all internal child plugins with their new ids
+        new_plugin.post_copy(new_plugin, new_plugins)
 
 
 @transaction.atomic
