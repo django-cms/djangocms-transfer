@@ -160,11 +160,11 @@ class PluginImporter(CMSPluginBase):
                 request, obj=new_plugins[0]
             )
 
-        from cms.toolbar.utils import get_plugin_tree_as_json
+        from cms.toolbar.utils import get_plugin_tree
 
         # Placeholder plugins import
         new_plugins = placeholder.get_plugins(language).exclude(pk__in=tree_order)
-        data = json.loads(get_plugin_tree_as_json(request, list(new_plugins)))
+        data = get_plugin_tree(request, list(new_plugins))
         data["plugin_order"] = tree_order + ["__COPY__"]
         data["target_placeholder_id"] = placeholder.pk
         context = {"structure_data": json.dumps(data)}

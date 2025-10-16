@@ -91,14 +91,23 @@ different systems while setting the contents as you need it::
             })
         return plugin_data
 
-    def import_function(deserialized_object):
-        some_related_object = MyModel.objects.first()
-        for field in deserialized_object.object._meta.fields:
+    def import_function(plugin, plugin_data):
+        some_related_fallback_object = MyModel.objects.first()
+        for field in plugin._meta.fields:
             # example of setting a default value for a related field
             if isinstance(field, ForeignKey):
-                value = getattr(deserialized_object.object, field.attname)
-                if field.related_model == MyModel and value is not None:
-                    setattr(deserialized_object.object, field.name, some_related_object)
+                plugin_value = getattr(plugin, field.attname)
+                raw_value = plugin_data[field.name]
+                if (
+                    field.related_model == MyModel
+                    # related object is referenced, but does not exist
+                    and plugin_value is None and raw_value is not None
+                ):
+                    setattr(plugin, field.name, some_related_fallback_object)
+        # There is no guarantee on whether djangocms-transfer saves the
+        # plugin. It is recommended to do this yourself in case you changed
+        # the plugin.
+        plugin.save()
 
 
 Running Tests

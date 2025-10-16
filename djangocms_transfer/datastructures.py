@@ -1,4 +1,6 @@
+import importlib
 from collections import namedtuple
+from typing import Callable
 
 from cms.api import add_plugin
 from cms.models import CMSPlugin
@@ -66,6 +68,7 @@ class ArchivedPlugin(BaseArchivedPlugin):
             target=parent,
             **data,
         )
+        self._call_user_site_import_processor_if_necessary(plugin, self.data)
 
         field = ("target",) if plugin_target else ()
         # An empty *update_fields* iterable will skip the save
@@ -91,3 +94,23 @@ class ArchivedPlugin(BaseArchivedPlugin):
 
         plugin.save()
         return plugin
+
+    def _call_user_site_import_processor_if_necessary(
+        self, plugin: CMSPlugin, plugin_data: dict
+    ):
+        # customize plugin-data on import with configured function
+        if processor_symbol := getattr(
+            settings, "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA", None
+        ):
+            function = self._resolve_function_from_full_path(processor_symbol)
+            function(plugin, plugin_data)
+
+    def _resolve_function_from_full_path(
+        self, fully_qualified_path: str
+    ) -> Callable:
+        try:
+            module_name, function_name = fully_qualified_path.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+            return getattr(module, function_name)
+        except (AttributeError, ImportError):
+            raise ImportError(f"could not resolve {fully_qualified_path}")
