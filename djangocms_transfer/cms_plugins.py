@@ -33,70 +33,45 @@ class PluginImporter(CMSPluginBase):
         ]
         return urlpatterns
 
-    def get_extra_global_plugin_menu_items(self, request, plugin):
-        # django-cms 3.4 compatibility
-        return self.get_extra_plugin_menu_items(request, plugin)
+    @staticmethod
+    def _get_extra_menu_items(query_params, request):
+        data = urlencode({
+            "language": get_language_from_request(request),
+            **query_params
+        })
+        return [
+            PluginMenuItem(
+                _("Export plugins"),
+                admin_reverse("cms_export_plugins") + "?" + data,
+                data={},
+                action="none",
+                attributes={
+                    "icon": "export",
+                },
+            ),
+            PluginMenuItem(
+                _("Import plugins"),
+                admin_reverse("cms_import_plugins") + "?" + data,
+                data={},
+                action="modal",
+                attributes={
+                    "icon": "import",
+                },
+            ),
+        ]
 
     @classmethod
     def get_extra_plugin_menu_items(cls, request, plugin):
         if plugin.plugin_type == cls.__name__:
             return
 
-        data = urlencode(
-            {
-                "language": get_language_from_request(request),
-                "plugin": plugin.pk,
-            }
-        )
-        return [
-            PluginMenuItem(
-                _("Export plugins"),
-                admin_reverse("cms_export_plugins") + "?" + data,
-                data={},
-                action="none",
-                attributes={
-                    "icon": "export",
-                },
-            ),
-            PluginMenuItem(
-                _("Import plugins"),
-                admin_reverse("cms_import_plugins") + "?" + data,
-                data={},
-                action="modal",
-                attributes={
-                    "icon": "import",
-                },
-            ),
-        ]
+        data = {"plugin": plugin.pk}
+        return cls._get_extra_menu_items(data, request)
 
     @classmethod
     def get_extra_placeholder_menu_items(cls, request, placeholder):  # noqa
-        data = urlencode(
-            {
-                "language": get_language_from_request(request),
-                "placeholder": placeholder.pk,
-            }
-        )
-        return [
-            PluginMenuItem(
-                _("Export plugins"),
-                admin_reverse("cms_export_plugins") + "?" + data,
-                data={},
-                action="none",
-                attributes={
-                    "icon": "export",
-                },
-            ),
-            PluginMenuItem(
-                _("Import plugins"),
-                admin_reverse("cms_import_plugins") + "?" + data,
-                data={},
-                action="modal",
-                attributes={
-                    "icon": "import",
-                },
-            ),
-        ]
+        data = {"placeholder": placeholder.pk}
+        return cls._get_extra_menu_items(data, request)
 
     @classmethod
     def import_plugins_view(cls, request):
