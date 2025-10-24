@@ -27,7 +27,7 @@ class CustomProcessHookTest(FunctionalityBaseTestCase):
             ImportError,
             custom_process_hook,
             "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA",
-            self.plugin
+            self.plugin, self.plugin_data
         )
         self.assertRaises(
             ImportError,
@@ -41,9 +41,9 @@ class CustomProcessHookTest(FunctionalityBaseTestCase):
         self.assertTrue(
             custom_process_hook(
                 "DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA",
-                self.plugin
+                self.plugin, {}
             ),
-            self.plugin
+            (self.plugin, {})
         )
         self.assertTrue(
             custom_process_hook(
