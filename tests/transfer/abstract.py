@@ -10,7 +10,7 @@ class FunctionalityBaseTestCase(CMSTestCase):
 
     def setUp(self):
         self.page = self._create_page()
-        self.page_content = self.page.pagecontent_set(manager="admin_manager").first()
+        self.page_content = self.page.pagecontent_set(manager="admin_manager").filter(language="en").first()
         self.page.set_as_homepage()
 
     def _create_plugin(self, plugin_type="TextPlugin", parent=None, **kwargs):
@@ -40,11 +40,7 @@ class FunctionalityBaseTestCase(CMSTestCase):
         if page is None:
             page = self.page
         return add_plugin(
-            page.pagecontent_set(manager="admin_manager")
-            .filter(language="en")
-            .first()
-            .get_placeholders()
-            .get(slot="content"),
+            self.page_content.get_placeholders().get(slot="content"),
             plugin_publisher,
             "en",
             *args,
