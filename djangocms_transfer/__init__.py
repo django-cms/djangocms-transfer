@@ -9,7 +9,7 @@ def get_serializer_name(default="python"):
     return getattr(settings, "DJANGO_CMS_TRANSFER_SERIALIZER", default)
 
 
-def custom_process_hook(transfer_hook, plugin, plugin_data=None):
+def custom_process_hook(transfer_hook, plugin, plugin_data):
     from importlib import import_module
 
     from django.conf import settings
@@ -24,7 +24,4 @@ def custom_process_hook(transfer_hook, plugin, plugin_data=None):
     except (ImportError, AttributeError) as e:
         raise ImportError(f"Could not import '{hook}': {e}")
 
-    if plugin_data:
-        return func(plugin, plugin_data)
-    else:
-        return func(plugin)
+    return func(plugin, plugin_data)
