@@ -19,6 +19,7 @@ except ImportError:
     # django CMS 4.1 still uses the legacy data bridge
     # This method serves as a compatibility shim
     import json
+
     from cms.toolbar.utils import get_plugin_tree_as_json
 
     def get_plugin_tree(request, plugins):
