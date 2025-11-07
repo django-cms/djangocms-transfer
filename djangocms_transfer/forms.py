@@ -86,7 +86,7 @@ class ExportImportForm(forms.Form):
 
         if plugin:
             plugin_model = plugin.get_plugin_class().model
-            plugin_is_bound = plugin_model.objects.filter(cmsplugin_ptr=plugin).exists()
+            plugin_is_bound = plugin_model is CMSPlugin or plugin_model.objects.filter(cmsplugin_ptr=plugin).exists()
         else:
             plugin_is_bound = False
 
