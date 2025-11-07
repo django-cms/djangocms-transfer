@@ -13,6 +13,19 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
+try:
+    from cms.toolbar.utils import get_plugin_tree
+except ImportError:
+    # django CMS 4.1 still uses the legacy data bridge
+    # This method serves as a compatibility shim
+    import json
+    from cms.toolbar.utils import get_plugin_tree_as_json
+
+    def get_plugin_tree(request, plugins):
+        json_str = get_plugin_tree_as_json(request, plugins)
+        return json.loads(json_str)
+
+
 
 class PluginImporter(CMSPluginBase):
     system = True
@@ -134,8 +147,6 @@ class PluginImporter(CMSPluginBase):
             return plugin.get_plugin_class_instance().render_close_frame(
                 request, obj=new_plugins[0]
             )
-
-        from cms.toolbar.utils import get_plugin_tree
 
         # Placeholder plugins import
         new_plugins = placeholder.get_plugins(language).exclude(pk__in=tree_order)
