@@ -84,11 +84,9 @@ class ExportImportForm(forms.Form):
             )
             raise forms.ValidationError(message)
 
+        plugin_is_bound = False
         if plugin:
-            plugin_model = plugin.get_plugin_class().model
-            plugin_is_bound = plugin_model.objects.filter(cmsplugin_ptr=plugin).exists()
-        else:
-            plugin_is_bound = False
+            plugin_is_bound = plugin.get_bound_plugin()
 
         if plugin and not plugin_is_bound:
             raise ValidationError("Plugin is unbound.")

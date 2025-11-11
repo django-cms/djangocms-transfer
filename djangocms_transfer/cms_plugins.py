@@ -13,6 +13,18 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
+try:
+    from cms.toolbar.utils import get_plugin_tree
+except ImportError:
+    # django CMS 4.1 still uses the legacy data bridge
+    # This method serves as a compatibility shim
+    from cms.toolbar.utils import get_plugin_tree_as_json
+
+    def get_plugin_tree(request, plugins):
+        json_str = get_plugin_tree_as_json(request, plugins)
+        return json.loads(json_str)
+
+
 
 class PluginImporter(CMSPluginBase):
     system = True
@@ -33,70 +45,45 @@ class PluginImporter(CMSPluginBase):
         ]
         return urlpatterns
 
-    def get_extra_global_plugin_menu_items(self, request, plugin):
-        # django-cms 3.4 compatibility
-        return self.get_extra_plugin_menu_items(request, plugin)
+    @staticmethod
+    def _get_extra_menu_items(query_params, request):
+        data = urlencode({
+            "language": get_language_from_request(request),
+            **query_params
+        })
+        return [
+            PluginMenuItem(
+                _("Export plugins"),
+                admin_reverse("cms_export_plugins") + "?" + data,
+                data={},
+                action="none",
+                attributes={
+                    "icon": "export",
+                },
+            ),
+            PluginMenuItem(
+                _("Import plugins"),
+                admin_reverse("cms_import_plugins") + "?" + data,
+                data={},
+                action="modal",
+                attributes={
+                    "icon": "import",
+                },
+            ),
+        ]
 
     @classmethod
     def get_extra_plugin_menu_items(cls, request, plugin):
         if plugin.plugin_type == cls.__name__:
             return
 
-        data = urlencode(
-            {
-                "language": get_language_from_request(request),
-                "plugin": plugin.pk,
-            }
-        )
-        return [
-            PluginMenuItem(
-                _("Export plugins"),
-                admin_reverse("cms_export_plugins") + "?" + data,
-                data={},
-                action="none",
-                attributes={
-                    "icon": "export",
-                },
-            ),
-            PluginMenuItem(
-                _("Import plugins"),
-                admin_reverse("cms_import_plugins") + "?" + data,
-                data={},
-                action="modal",
-                attributes={
-                    "icon": "import",
-                },
-            ),
-        ]
+        data = {"plugin": plugin.pk}
+        return cls._get_extra_menu_items(data, request)
 
     @classmethod
     def get_extra_placeholder_menu_items(cls, request, placeholder):  # noqa
-        data = urlencode(
-            {
-                "language": get_language_from_request(request),
-                "placeholder": placeholder.pk,
-            }
-        )
-        return [
-            PluginMenuItem(
-                _("Export plugins"),
-                admin_reverse("cms_export_plugins") + "?" + data,
-                data={},
-                action="none",
-                attributes={
-                    "icon": "export",
-                },
-            ),
-            PluginMenuItem(
-                _("Import plugins"),
-                admin_reverse("cms_import_plugins") + "?" + data,
-                data={},
-                action="modal",
-                attributes={
-                    "icon": "import",
-                },
-            ),
-        ]
+        data = {"placeholder": placeholder.pk}
+        return cls._get_extra_menu_items(data, request)
 
     @classmethod
     def import_plugins_view(cls, request):
@@ -159,8 +146,6 @@ class PluginImporter(CMSPluginBase):
             return plugin.get_plugin_class_instance().render_close_frame(
                 request, obj=new_plugins[0]
             )
-
-        from cms.toolbar.utils import get_plugin_tree
 
         # Placeholder plugins import
         new_plugins = placeholder.get_plugins(language).exclude(pk__in=tree_order)

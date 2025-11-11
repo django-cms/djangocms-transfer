@@ -24,6 +24,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "cms.middleware.toolbar.ToolbarMiddleware"
 ]
 
 TEMPLATES = [
@@ -73,5 +74,7 @@ CMS_CONFIRM_VERSION4 = True
 USE_TZ = True
 
 LANGUAGE_CODE = "en"
+
+ROOT_URLCONF = "tests.urls"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
