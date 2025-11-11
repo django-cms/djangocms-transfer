@@ -2,6 +2,19 @@
 Changelog
 =========
 
+2.0.1 (2025-11-10)
+==================
+
+* pre-commit hook updates by @bencipher in https://github.com/django-cms/djangocms-transfer/pull/25
+* Update the pks for internal child plugins by @mrbazzan in https://github.com/django-cms/djangocms-transfer/pull/49
+* django-cms 5.0 compatibility & restored import callback invocation by @florianschieder in https://github.com/django-cms/djangocms-transfer/pull/46
+
+**New Contributors**
+
+* @bencipher made their first contribution in https://github.com/django-cms/djangocms-transfer/pull/25
+* @florianschieder made their first contribution in https://github.com/django-cms/djangocms-transfer/pull/46
+
+
 2.0.0 (2025-08-09)
 ==================
 
