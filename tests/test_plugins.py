@@ -183,3 +183,56 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             )
             response = self.client.post(path=request_path, data=post_data)
             self.assertIn(b'<div class="success"></div>', response.content)
+
+    def test_export_plugin_views(self):
+        with self.login_user_context(self.user):
+            response = self.client.get(admin_reverse("cms_export_plugins"))
+            self.assertEqual(response.content, b"Form received unexpected values.")
+
+        del self.user # self.get_request() checks for "user" attribute
+        self.assertRaises(
+            PermissionDenied,
+            self.plugin_importer.export_plugins_view,
+            self.get_request()
+        )
+
+    def test_export_plugin_views_for_plugin(self):
+        # create plugins
+        text_plugin = self._create_plugin()
+        self._create_plugin(plugin_type="LinkPlugin", parent=text_plugin)
+
+        with self.login_user_context(self.user):
+            response = self.client.get(
+                admin_reverse("cms_export_plugins") + f"?language=en&plugin={text_plugin.pk}"
+            )
+            self.assertEqual(response.status_code, 200)
+            exported_data = json.loads(response.content)
+            # exported content should be TextPlugin and its child (LinkPlugin).
+            self.assertEqual(len(exported_data), 2)
+            self.assertEqual(list(map(lambda i: i["plugin_type"], exported_data)), ["TextPlugin", "LinkPlugin"])
+
+    def test_export_plugin_views_for_placeholder(self):
+        placeholder = self.page_content.get_placeholders().get(slot="content")
+        # create plugins in the placeholder
+        text_plugin = self._create_plugin()
+        self._add_plugin_to_page("PluginImporter")
+        self._create_plugin(plugin_type="LinkPlugin", parent=text_plugin)
+
+        with self.login_user_context(self.user):
+            response = self.client.get(
+                admin_reverse("cms_export_plugins") + f"?language=en&placeholder={placeholder.pk}"
+            )
+            self.assertEqual(response.status_code, 200)
+            exported_data = json.loads(response.content)
+            self.assertEqual(len(exported_data), 3)
+            self.assertEqual(list(map(lambda i: i["plugin_type"], exported_data)), ["TextPlugin", "LinkPlugin", "PluginImporter"])
+
+    def test_export_plugin_views_for_page(self):
+        with self.login_user_context(self.user):
+            response = self.client.get(
+                admin_reverse("cms_export_plugins") + f"?language=en&cms_pagecontent={self.page_content.pk}"
+            )
+            self.assertEqual(response.status_code, 200)
+            exported_data = json.loads(response.content)
+            self.assertEqual(exported_data[0]["placeholder"], "content")
+            self.assertEqual(len(exported_data[0]["plugins"]), 0)
