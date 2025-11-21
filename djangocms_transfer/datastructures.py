@@ -2,13 +2,13 @@ from collections import namedtuple
 
 from cms.api import add_plugin
 from cms.models import CMSPlugin
+from cms.utils.plugins import get_plugin_model
 from django.core.serializers import deserialize
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 
 from . import custom_process_hook, get_serializer_name
-from .utils import get_plugin_model
 
 BaseArchivedPlugin = namedtuple(
     "ArchivedPlugin",
