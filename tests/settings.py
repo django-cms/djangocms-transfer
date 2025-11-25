@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "djangocms_text",
     "djangocms_link",
     "djangocms_transfer",
+    "tests.test_app",
 ]
 
 MIDDLEWARE = [
