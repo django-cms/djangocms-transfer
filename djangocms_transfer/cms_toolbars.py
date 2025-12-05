@@ -14,8 +14,7 @@ class PluginImporter(CMSToolbar):
 
     def populate(self):
         # always use draft if we have a page
-        page = self.request.current_page
-
+        page = getattr(self.request, "current_page", None)
         if not page:
             return
 
