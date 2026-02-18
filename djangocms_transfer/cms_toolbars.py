@@ -11,6 +11,7 @@ from django.utils.translation import gettext
 class PluginImporter(CMSToolbar):
     class Media:
         css = {"all": ("djangocms_transfer/css/transfer.css",)}
+        js = ["djangocms_transfer/js/plugin_copy.js"]
 
     def populate(self):
         # always use draft if we have a page
