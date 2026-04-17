@@ -102,7 +102,7 @@ class PluginExportForm(ExportImportForm):
         placeholder = data["placeholder"]
 
         if cms_pagecontent:
-            return "{}.json".format(cms_pagecontent.page.get_slug(language=language))
+            return f"{cms_pagecontent.page.get_slug(language=language)}.json"
         elif placeholder and placeholder.page is not None:
             return "{}_{}.json".format(
                 placeholder.page.get_slug(language=language),
