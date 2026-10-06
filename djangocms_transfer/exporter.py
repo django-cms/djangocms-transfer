@@ -1,12 +1,14 @@
 import functools
 import json
 
-from cms.utils.plugins import get_bound_plugins
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 
+from cms.utils.plugins import get_bound_plugins
+
 from . import custom_process_hook, get_serializer_name
 from .utils import get_plugin_fields
+
 
 dump_json = functools.partial(json.dumps, cls=DjangoJSONEncoder)
 

@@ -2,6 +2,7 @@ import json
 import unittest
 
 from cms.models import CMSPlugin
+
 from djangocms_text.utils import plugin_to_tag
 
 from djangocms_transfer.datastructures import (

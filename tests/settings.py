@@ -1,5 +1,6 @@
 import os
 
+
 SECRET_KEY = "djangocms-transfer-test"
 
 ALLOWED_HOSTS = ["localhost"]

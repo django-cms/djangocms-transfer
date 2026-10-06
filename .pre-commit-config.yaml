@@ -28,18 +28,11 @@ repos:
     hooks:
       - id: django-upgrade
         args: [--target-version, "4.2"]
--   repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
     hooks:
-      - id: flake8
--   repo: https://github.com/asottile/yesqa
-    rev: v1.3.0
-    hooks:
-      - id: yesqa
--   repo: https://github.com/pycqa/isort
-    rev: 5.10.1
-    hooks:
-      - id: isort
+      - id: ruff-check
+        args: [--fix]
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:

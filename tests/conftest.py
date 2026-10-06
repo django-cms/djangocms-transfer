@@ -2,9 +2,10 @@ import os
 import sys
 
 import django
-import pytest
 from django.conf import settings
 from django.test.utils import get_runner
+
+import pytest
 
 
 def transfer(first, second=None):
