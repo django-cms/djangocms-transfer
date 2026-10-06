@@ -1,5 +1,6 @@
 from cms.api import add_plugin, create_page
 from cms.test_utils.testcases import CMSTestCase
+
 from freezegun import freeze_time
 
 

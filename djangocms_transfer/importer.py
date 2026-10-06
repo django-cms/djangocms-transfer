@@ -1,5 +1,6 @@
-from cms.models import CMSPlugin
 from django.db import transaction
+
+from cms.models import CMSPlugin
 
 
 @transaction.atomic

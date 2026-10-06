@@ -54,22 +54,39 @@ packages = [ "djangocms_transfer" ]
 version = { attr = "djangocms_transfer.__version__" }
 
 [tool.ruff]
-lint.exclude = [
-    ".env",
-    ".venv",
-    "**/migrations/**",
-]
-lint.ignore = [
-    "E501",  # line too long
-    "F403",  # 'from module import *' used; unable to detect undefined names
-    "E701",  # multiple statements on one line (colon)
-    "F401",  # module imported but unused
-]
 line-length = 119
-lint.select = [
-    "I",
-    "E",
-    "F",
-    "W",
+extend-exclude = [
+  "**/migrations/**",
+  ".env",
 ]
 
+[tool.ruff.lint]
+select = [
+  "I",
+  "E",
+  "F",
+  "W",
+]
+ignore = [
+  "E501",  # line too long
+  "F403",  # 'from module import *' used; unable to detect undefined names
+  "E701",  # multiple statements on one line (colon)
+  "F401",  # module imported but unused
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["djangocms_transfer"]
+lines-after-imports = 2
+section-order = [
+  "future",
+  "standard-library",
+  "django",
+  "cms",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+django = ["django"]
+cms = ["cms", "menus"]

@@ -1,9 +1,10 @@
 import json
 
-from cms.plugin_pool import plugin_pool
-from cms.utils.urlutils import admin_reverse
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
+
+from cms.plugin_pool import plugin_pool
+from cms.utils.urlutils import admin_reverse
 
 from .abstract import FunctionalityBaseTestCase
 
