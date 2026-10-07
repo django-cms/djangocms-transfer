@@ -12,6 +12,7 @@ from cms.utils.urlutils import admin_reverse
 class PluginImporter(CMSToolbar):
     class Media:
         css = {"all": ("djangocms_transfer/css/transfer.css",)}
+        js = ["djangocms_transfer/js/plugin_copy.js"]
 
     def populate(self):
         # always use draft if we have a page
