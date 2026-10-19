@@ -2,7 +2,7 @@
 django CMS Transfer
 ===================
 
-|pypi| |coverage| |python| |django| |djangocms|
+|pypi| |coverage| |python| |django| |djangocms| |build|
 
 
 **django CMS Transfer** is an **experimental** package that allows you to export
@@ -151,3 +151,7 @@ section.
     :target: https://www.djangoproject.com/
 .. |djangocms| image:: https://img.shields.io/badge/django%20CMS-4-blue.svg
     :target: https://www.django-cms.org/
+.. |Build|  image:: https://github.com/jyoti-bhogal/django-cms/actions/workflows/test.yml/badge.svg
+  :target: https://github.com/jyoti-bhogal/django-cms/actions/workflows/test.yml
+  :alt: Build Status
+
