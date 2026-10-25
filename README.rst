@@ -140,18 +140,15 @@ Contributors are listed at the `contributors <https://github.com/django-cms/djan
 section.
 
 
-.. |pypi| image:: https://badge.fury.io/py/djangocms-transfer.svg
-    :target: http://badge.fury.io/py/djangocms-transfer
+.. |pypi| image:: https://img.shields.io/pypi/v/djangocms-transfer.svg
+    :target: https://pypi.org/
 .. |coverage| image:: https://codecov.io/gh/django-cms/djangocms-transfer/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/django-cms/djangocms-transfer
-
-.. |python| image:: https://img.shields.io/badge/python-3.9+-blue.svg
-    :target: https://pypi.org/project/djangocms-transfer/
-.. |django| image:: https://img.shields.io/badge/django-4.2,%205.0,%205.1-blue.svg
+    :target: https://codecov.io/gh/django-cms/djangocms-transfer    
+.. |python| image:: https://img.shields.io/pypi/pyversions/djangocms-transfer.svg
+    :target: https://www.python.org/ 
+.. |django| image:: https://img.shields.io/pypi/frameworkversions/django/django-cms.svg
     :target: https://www.djangoproject.com/
-.. |djangocms| image:: https://img.shields.io/badge/django%20CMS-4-blue.svg
+.. |djangocms| image:: https://img.shields.io/pypi/frameworkversions/django-cms/djangocms-transfer.svg
     :target: https://www.django-cms.org/
-.. |Build|  image:: https://github.com/jyoti-bhogal/django-cms/actions/workflows/test.yml/badge.svg
-  :target: https://github.com/jyoti-bhogal/django-cms/actions/workflows/test.yml
-  :alt: Build Status
+
 
