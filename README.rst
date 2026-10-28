@@ -2,7 +2,7 @@
 django CMS Transfer
 ===================
 
-|pypi| |coverage| |python| |django| |djangocms| 
+|pypi| |coverage| |python| |django| |djangocms|
 
 
 **django CMS Transfer** is an **experimental** package that allows you to export
