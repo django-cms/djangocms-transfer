@@ -1,13 +1,22 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, current_thread
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.test import Client, override_settings
+from django.contrib.auth import get_user_model
+from django.contrib.messages.storage.fallback import FallbackStorage
+from django.db import close_old_connections, connection
+from django.test import Client, RequestFactory, TransactionTestCase, override_settings, skipUnlessDBFeature
 
-from cms.models import CMSPlugin
+from cms.api import add_plugin
+from cms.models import CMSPlugin, Placeholder
 from cms.models.placeholderpluginmodel import PlaceholderReference
 from cms.utils.urlutils import admin_reverse
 
+from djangocms_transfer.clipboard import clipboard_view
 from djangocms_transfer.exporter import export_plugin
+from djangocms_transfer.importer import import_plugins
 
 from .abstract import FunctionalityBaseTestCase
 
@@ -142,3 +151,66 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
                 self.assertEqual(self.post().status_code, 404)
                 self.assertEqual(self.client.get(admin_reverse("cms_transfer_clipboard")).status_code, 404)
             self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
+
+
+@skipUnlessDBFeature("has_select_for_update")
+class ConcurrentBrowserClipboardTests(TransactionTestCase):
+    def test_concurrent_imports_replace_instead_of_combining_trees(self):
+        user = get_user_model().objects.create(username="concurrent", is_staff=True, is_superuser=True)
+        clipboard = Placeholder.objects.create(slot="clipboard")
+        source = Placeholder.objects.create(slot="source")
+        plugin = add_plugin(source, "TextPlugin", "en", body="first import")
+        payload = {
+            "format": "djangocms-transfer", "version": 1, "kind": "plugin",
+            "plugins": json.loads(export_plugin(plugin)),
+        }
+        first_import_started = Event()
+        second_lock_attempted = Event()
+        second_import_started = Event()
+        release_first = Event()
+
+        def delayed_import(*args, **kwargs):
+            if current_thread().name.endswith("_0"):
+                first_import_started.set()
+                if not release_first.wait(10):
+                    raise RuntimeError("Timed out waiting to finish the first import")
+            else:
+                second_import_started.set()
+            return import_plugins(*args, **kwargs)
+
+        def observe_lock(execute, sql, params, many, context):
+            if "FOR UPDATE" in sql:
+                second_lock_attempted.set()
+            return execute(sql, params, many, context)
+
+        def send_import(second=False):
+            close_old_connections()
+            try:
+                request = RequestFactory().post("/clipboard/", json.dumps(payload), content_type="application/json")
+                request.user = user
+                request.toolbar = SimpleNamespace(
+                    clipboard=Placeholder.objects.get(pk=clipboard.pk), request_language="en",
+                )
+                request.session = {}
+                request._messages = FallbackStorage(request)
+                request._dont_enforce_csrf_checks = True
+                with connection.execute_wrapper(observe_lock if second else lambda execute, *args: execute(*args)):
+                    return clipboard_view(request).status_code
+            finally:
+                close_old_connections()
+
+        # Start with an empty clipboard: locking its plugins would not protect it.
+        with patch("djangocms_transfer.clipboard.import_plugins", side_effect=delayed_import):
+            with ThreadPoolExecutor(max_workers=2, thread_name_prefix="clipboard") as executor:
+                first = executor.submit(send_import)
+                try:
+                    self.assertTrue(first_import_started.wait(10))
+                    second = executor.submit(send_import, True)
+                    self.assertTrue(second_lock_attempted.wait(10))
+                    self.assertFalse(second_import_started.wait(0.2))
+                finally:
+                    release_first.set()
+                self.assertEqual(first.result(timeout=10), 200)
+                self.assertEqual(second.result(timeout=10), 200)
+        self.assertTrue(second_import_started.is_set())
+        self.assertEqual(clipboard.get_plugins().count(), 1)

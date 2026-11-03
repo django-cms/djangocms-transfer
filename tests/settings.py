@@ -73,6 +73,17 @@ DATABASES = {
     }
 }
 
+if os.environ.get("DJANGOCMS_TRANSFER_TEST_POSTGRES"):
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "postgres",
+        "USER": os.environ.get("PGUSER", "postgres"),
+        "PASSWORD": os.environ.get("PGPASSWORD", ""),
+        "HOST": os.environ.get("PGHOST", "localhost"),
+        "PORT": os.environ.get("PGPORT", "5432"),
+        "TEST": {"MIGRATE": False, "CHARSET": "UTF8", "TEMPLATE": "template0"},
+    }
+
 CMS_CONFIRM_VERSION4 = True
 
 USE_TZ = True

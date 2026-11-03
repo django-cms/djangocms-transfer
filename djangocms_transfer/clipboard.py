@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
+from cms.models import Placeholder
 from cms.models.placeholderpluginmodel import PlaceholderReference
 from cms.plugin_pool import plugin_pool
 from cms.toolbar.utils import get_toolbar_from_request
@@ -101,6 +102,9 @@ def clipboard_view(request):
         kind, plugins = parse_clipboard(payload, request.user)
         language = toolbar.request_language
         with transaction.atomic():
+            # Lock the stable placeholder row, including when the clipboard is
+            # empty, so concurrent imports replace rather than merge content.
+            clipboard = Placeholder.objects.select_for_update().get(pk=clipboard.pk)
             clipboard.clear()
             target = clipboard
             if kind == "placeholder":
