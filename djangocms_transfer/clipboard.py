@@ -49,11 +49,14 @@ def parse_clipboard(payload, user):
         try:
             plugin_class = plugin_pool.get_plugin(plugin_type)
         except KeyError:
-            raise ValidationError(_("A plugin type is not installed on this site."))
+            raise ValidationError(_("The plugin type \"%(plugin_type)s\" is not installed on this site."),
+                                  params={"plugin_type": plugin_type})
         if plugin_class.system:
-            raise ValidationError(_("System plugins cannot be imported."))
+            raise ValidationError(_("The system plugin \"%(plugin_type)s\" cannot be imported."),
+                                  params={"plugin_type": plugin_type})
         if not has_plugin_permission(user, plugin_type, "add"):
-            raise PermissionDenied
+            raise PermissionDenied(_("You do not have permission to add \"%(plugin_type)s\".") %
+                                   {"plugin_type": plugin_type})
         data = row["data"]
         allowed = set(get_plugin_fields(plugin_type))
         # Never accept model identity or inheritance links from another site.
@@ -67,6 +70,10 @@ def parse_clipboard(payload, user):
     if kind == "plugin" and roots != 1:
         raise ValidationError(_("A copied plugin must have one root."))
     return kind, plugins
+
+
+def import_error(message, status=400):
+    return JsonResponse({"error": " ".join((message, _("Your CMS clipboard has not changed.")))}, status=status)
 
 
 @require_http_methods(["GET", "POST"])
@@ -114,8 +121,14 @@ def clipboard_view(request):
                 )
                 target = reference.placeholder_ref
             import_plugins(plugins, target, language)
-    except (ValueError, TypeError, KeyError, AttributeError, ValidationError, IntegrityError):
-        return HttpResponseBadRequest(_("Clipboard content could not be imported. Your CMS clipboard has not changed."))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return import_error(_("The browser clipboard does not contain valid JSON."))
+    except ValidationError as error:
+        return import_error(" ".join(error.messages))
+    except PermissionDenied as error:
+        return import_error(str(error), status=403)
+    except (ValueError, TypeError, KeyError, AttributeError, IntegrityError):
+        return import_error(_("Clipboard content could not be imported."))
     message = _("Browser content imported into your clipboard.")
     messages.success(request, message)
     return JsonResponse({"message": message})

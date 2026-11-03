@@ -247,3 +247,34 @@ test('denied gesture-based write reports failure without affecting CMS copy', as
     assert.match(app.messages[0].message, /Copied to CMS clipboard/);
     assert.equal(app.context.CMS.API.locked, false);
 });
+
+test('server validation and permission reasons are shown to the user', async () => {
+    for (const status of [400, 403]) {
+        const reason = status === 400 ? 'MissingPlugin is not installed on this site.' :
+            'You do not have permission to add TextPlugin.';
+        const app = setup({fetch: async () => ({ok: false, status, json: async () => ({error: reason})})});
+        await app.click('import');
+        assert.equal(app.messages[0].message, reason);
+        assert.equal(app.messages[0].error, true);
+        assert.equal(app.reloads, 0);
+    }
+});
+
+test('server-provided plugin names are escaped before rendering CMS messages', async () => {
+    const app = setup({fetch: async () => ({ok: false, status: 400,
+        json: async () => ({error: 'Plugin "<img src=x onerror=alert(1)>" is not installed.'})})});
+    await app.click('import');
+    assert.match(app.messages[0].message, /&lt;img/);
+    assert.match(app.messages[0].message, /&quot;/);
+    assert.equal(app.messages[0].message.includes('<img'), false);
+    assert.equal(app.reloads, 0);
+});
+
+test('malformed error responses and internal server errors use a generic message', async () => {
+    for (const [status, body] of [[400, {error: {unexpected: true}}], [500, {error: 'Internal traceback'}]]) {
+        const app = setup({fetch: async () => ({ok: false, status, json: async () => body})});
+        await app.click('import');
+        assert.match(app.messages[0].message, /could not be imported/);
+        assert.equal(app.messages[0].message.includes('traceback'), false);
+    }
+});

@@ -3,6 +3,7 @@ from django.utils.http import urlencode
 from django.utils.translation import gettext
 
 from cms.models import PageContent
+from cms.toolbar.items import LinkItem
 from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.utils.page_permissions import user_can_change_page
@@ -23,10 +24,14 @@ class PluginImporter(CMSToolbar):
     def post_template_populate(self):
         menu = self.toolbar.get_menu("admin-menu")
         if menu and self.toolbar.edit_mode_active and browser_clipboard_enabled():
+            clipboard_item = menu.find_first(LinkItem, extra_classes=["cms-clipboard-trigger"])
+            if clipboard_item is None:
+                return
             menu.add_link_item(
                 gettext("Import clipboard from browser…"),
                 url=admin_reverse("cms_transfer_clipboard"),
                 extra_classes=["cms-transfer-clipboard-import"],
+                position=clipboard_item + 1,
             )
 
     def populate(self):

@@ -1,5 +1,6 @@
 from django.test import override_settings
 
+from cms.toolbar.items import LinkItem
 from cms.toolbar.utils import get_object_edit_url
 from cms.toolbar_pool import toolbar_pool
 
@@ -25,6 +26,24 @@ class PluginImporterToolbarTestCase(FunctionalityBaseTestCase):
             self.assertIn("Import clipboard from browser", markup)
             self.assertIn("cms-transfer-clipboard-import", markup)
             self.assertIn("djangocms_transfer/js/clipboard.js", str(toolbar.media))
+            menu = toolbar.get_menu("admin-menu")
+            clipboard_item = menu.find_first(LinkItem, extra_classes=["cms-clipboard-trigger"])
+            import_item = menu.find_first(LinkItem, extra_classes=["cms-transfer-clipboard-import"])
+            clear_item = menu.find_first(LinkItem, extra_classes=["cms-clipboard-empty"])
+            self.assertEqual(import_item.index, clipboard_item.index + 1)
+            self.assertEqual(clear_item.index, import_item.index + 1)
+
+    def test_browser_clipboard_menu_omitted_without_clipboard_section(self):
+        with self.login_user_context(self.get_superuser()):
+            response = self.client.get(get_object_edit_url(self.page_content))
+            toolbar = response.wsgi_request.toolbar
+            toolbar.populate()
+            menu = toolbar.get_menu("admin-menu")
+            for classes in (["cms-clipboard-trigger"], ["cms-clipboard-empty"]):
+                item = menu.find_first(LinkItem, extra_classes=classes)
+                menu.remove_item(item.item)
+            self.assertNotIn("cms-transfer-clipboard-import", toolbar.render())
+            self.assertIsNone(menu.find_first(LinkItem, extra_classes=["cms-transfer-clipboard-import"]))
 
     def setUp(self):
         super().setUp()

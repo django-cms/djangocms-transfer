@@ -129,6 +129,25 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
                     response = self.client.post(admin_reverse("cms_transfer_clipboard"),
                                                 raw, content_type="application/json")
                     self.assertEqual(response.status_code, 400)
+                    self.assertIn("does not contain valid JSON", response.json()["error"])
+                    self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
+
+    def test_validation_errors_report_the_reason_and_preserve_clipboard(self):
+        with self.login_user_context(self.user):
+            clipboard = self.post().wsgi_request.toolbar.clipboard
+            original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
+            for field, value, reason in (
+                ("plugin_type", "MissingPlugin", '"MissingPlugin" is not installed'),
+                ("plugin_type", "PluginImporter", 'system plugin "PluginImporter"'),
+                ("parent_id", 99999, "Invalid plugin tree"),
+                ("data", {"unknown_field": 42}, "Invalid plugin fields"),
+            ):
+                with self.subTest(reason=reason):
+                    row = {**self.payload["plugins"][0], field: value}
+                    response = self.post({**self.payload, "plugins": [row]})
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn(reason, response.json()["error"])
+                    self.assertIn("Your CMS clipboard has not changed", response.json()["error"])
                     self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
 
     def test_partial_import_failure_rolls_back_plugins_and_placeholder_wrapper(self):
@@ -178,8 +197,11 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
         with self.login_user_context(self.user):
             clipboard = self.post().wsgi_request.toolbar.clipboard
             original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
-            with patch("djangocms_transfer.clipboard.import_plugins", side_effect=ValueError):
-                self.assertEqual(self.post().status_code, 400)
+            with patch("djangocms_transfer.clipboard.import_plugins", side_effect=ValueError("private failure details")):
+                response = self.post()
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("could not be imported", response.json()["error"])
+                self.assertNotIn("private failure details", response.json()["error"])
             self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
 
     def test_plugin_permission_is_required(self):
@@ -187,7 +209,9 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
             clipboard = self.post().wsgi_request.toolbar.clipboard
             original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
             with patch("djangocms_transfer.clipboard.has_plugin_permission", return_value=False):
-                self.assertEqual(self.post().status_code, 403)
+                response = self.post()
+                self.assertEqual(response.status_code, 403)
+                self.assertIn('permission to add "TextPlugin"', response.json()["error"])
             self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
 
     def test_other_users_clipboard_is_untouched(self):

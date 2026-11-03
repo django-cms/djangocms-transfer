@@ -12,7 +12,11 @@
         document.documentElement.dataset.transferClipboardInitialized = 'true';
         const endpoint = (item.matches('a') ? item : item.querySelector('a')).href;
         const translate = window.gettext || (text => text);
-        const message = (text, error = false) => cms.API.Messages.open({message: translate(text), error});
+        // CMS messages render HTML. Treat server-provided plugin names as text.
+        const escape = text => text.replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
+        const message = (text, error = false) => cms.API.Messages.open({message: escape(translate(text)), error});
         let importing = false;
         let pendingCopy = null;
         let copyGeneration = 0;
@@ -133,9 +137,20 @@
                     body: text
                 });
                 if (!response.ok) {
-                    throw new Error(response.status === 403 ?
+                    let detail;
+                    if (response.status === 400 || response.status === 403) {
+                        try {
+                            const body = await response.json();
+                            if (typeof body?.error === 'string') {
+                                detail = body.error;
+                            }
+                        } catch {
+                            // CSRF failures and proxy errors may return HTML.
+                        }
+                    }
+                    throw new Error(detail || (response.status === 403 ?
                         'You do not have permission to import these plugins.' :
-                        'Clipboard content could not be imported. Your CMS clipboard has not changed.');
+                        'Clipboard content could not be imported. Your CMS clipboard has not changed.'));
                 }
                 // Refresh clipboard controls and Paste availability from the server.
                 window.location.reload();
