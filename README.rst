@@ -40,9 +40,7 @@ For a manual install:
 Version Compatibility
 ---------------------
 
-For django CMS 4.0 or later, you must use djangocms-transfer 2.0 or later.
-
-For django CMS 3.7 through 3.11 use versions 1.x of djangocms-transfer.
+This version supports django CMS 4.1 and later.
 
 
 How to Use
@@ -54,11 +52,35 @@ and select your desired choice.
 To export/import a plugin, Open the "*Structure board*", click on the
 dropdown menu for the specific plugin and select your choice.
 
+Browser clipboard
+-----------------
+
+In edit mode, copying a plugin (including its children) or a whole placeholder
+also writes its transfer JSON to the browser clipboard. To transfer it to another
+instance, open that instance's administration menu in the toolbar and choose
+"Import clipboard from browser…". This replaces your django CMS clipboard;
+use the normal Paste action to insert the content wherever it is allowed.
+
+Clipboard content is validated on import, including installed plugin types and
+your permission to add them. Invalid content leaves your CMS clipboard unchanged.
+Both instances need django CMS Transfer installed. Related objects and media
+have the same limitations as file export/import.
+
+Browser clipboard access requires HTTPS (or localhost) and browser permission.
+If the browser clipboard cannot be updated, the normal CMS copy still succeeds
+and a message explains that browser copying failed.
+
 
 Customization
 -------------
 
 Following settings are available:
+
+* **DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD** (default: ``True``):
+
+  Set to ``False`` to disable browser clipboard copying and importing, including
+  its toolbar menu item and endpoint. Normal django CMS copy/paste and file
+  export/import remain available.
 
 * **DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA**:
 

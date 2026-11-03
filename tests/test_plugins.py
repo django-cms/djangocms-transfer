@@ -24,9 +24,10 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
 
     def test_get_plugin_urls(self):
         urlpatterns = self.plugin_importer().get_plugin_urls()
-        self.assertEqual(len(urlpatterns), 2)
-        self.assertEqual(urlpatterns[0].name, "cms_export_plugins")
-        self.assertEqual(urlpatterns[1].name, "cms_import_plugins")
+        self.assertEqual(
+            [pattern.name for pattern in urlpatterns],
+            ["cms_transfer_clipboard", "cms_export_plugins", "cms_import_plugins"],
+        )
 
     def test_get_extra_menu_items(self):
         request = self.get_request()

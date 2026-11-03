@@ -12,6 +12,7 @@ from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
+from .clipboard import clipboard_view
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
 
@@ -34,6 +35,7 @@ class PluginImporter(CMSPluginBase):
 
     def get_plugin_urls(self):
         urlpatterns = [
+            re_path(r"^browser-clipboard/$", clipboard_view, name="cms_transfer_clipboard"),
             re_path(
                 r"^export-plugins/$",
                 self.export_plugins_view,

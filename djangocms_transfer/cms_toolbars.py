@@ -1,3 +1,4 @@
+from django.forms import Media
 from django.utils.http import urlencode
 from django.utils.translation import gettext
 
@@ -7,11 +8,26 @@ from cms.toolbar_pool import toolbar_pool
 from cms.utils.page_permissions import user_can_change_page
 from cms.utils.urlutils import admin_reverse
 
+from . import browser_clipboard_enabled
+
 
 @toolbar_pool.register
 class PluginImporter(CMSToolbar):
-    class Media:
-        css = {"all": ("djangocms_transfer/css/transfer.css",)}
+    @property
+    def media(self):
+        return super().media + Media(
+            css={"all": ("djangocms_transfer/css/transfer.css",)},
+            js=("djangocms_transfer/js/clipboard.js",) if browser_clipboard_enabled() else (),
+        )
+
+    def post_template_populate(self):
+        menu = self.toolbar.get_menu("admin-menu")
+        if menu and self.toolbar.edit_mode_active and browser_clipboard_enabled():
+            menu.add_link_item(
+                gettext("Import clipboard from browser…"),
+                url=admin_reverse("cms_transfer_clipboard"),
+                extra_classes=["cms-transfer-clipboard-import"],
+            )
 
     def populate(self):
         # always use draft if we have a page

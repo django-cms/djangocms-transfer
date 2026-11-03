@@ -3,6 +3,15 @@ name: CodeCov
 on: [push, pull_request]
 
 jobs:
+  clipboard-javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tools/test_clipboard.mjs
+
   unit-tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -35,6 +44,18 @@ jobs:
             python-version: 3.9
           - requirements-file: dj52_cms50.txt
             python-version: 3.9
+        include:
+          - {python-version: "3.10", requirements-file: dj52_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.11", requirements-file: dj52_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.12", requirements-file: dj52_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.13", requirements-file: dj52_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.14", requirements-file: dj52_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.12", requirements-file: dj60_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.13", requirements-file: dj60_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.14", requirements-file: dj60_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.12", requirements-file: dj61_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.13", requirements-file: dj61_cms51.txt, os: ubuntu-latest}
+          - {python-version: "3.14", requirements-file: dj61_cms51.txt, os: ubuntu-latest}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -45,7 +66,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r tests/requirements/${{ matrix.requirements-file }}
-        python setup.py install
+        pip install .
 
     - name: Run coverage
       run: coverage run -m pytest
