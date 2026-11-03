@@ -75,6 +75,9 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
                 response = self.post()
                 clipboard = response.wsgi_request.toolbar.clipboard
                 root = clipboard.get_plugins().get()
+                data = response.json()
+                self.assertEqual(str(data["plugins"][0]["plugin_id"]), str(root.pk))
+                self.assertIn(f"cms-draggable-{root.pk}", data["html"])
                 target = self.plugin.placeholder
                 before = target.get_plugins().count()
                 response = self.client.post(admin_reverse("cms_placeholder_move_plugin"), {

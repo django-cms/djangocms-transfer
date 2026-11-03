@@ -22,6 +22,15 @@ from .importer import import_plugins
 from .validation import parse_plugins
 
 
+try:
+    from cms.toolbar.utils import get_plugin_tree
+except ImportError:  # django CMS 4.1
+    from cms.toolbar.utils import get_plugin_tree_as_json
+
+    def get_plugin_tree(request, plugins):
+        return json.loads(get_plugin_tree_as_json(request, plugins))
+
+
 def parse_clipboard(payload, user):
     if not isinstance(payload, dict) or payload.get("format") != "djangocms-transfer" or payload.get("version") != 1:
         raise ValidationError(_("This is not compatible clipboard content."))
@@ -82,6 +91,7 @@ def clipboard_view(request):
                 )
                 target = reference.placeholder_ref
             import_plugins(plugins, target, language, request=request, permission_placeholder=clipboard)
+            data = get_plugin_tree(request, [clipboard.get_plugins(language).first()])
     except RequestDataTooBig:
         limit = settings.DATA_UPLOAD_MAX_MEMORY_SIZE
         return import_error(_("Clipboard content exceeds the upload limit (%(limit)s bytes). Use file import or ask your administrator to increase DATA_UPLOAD_MAX_MEMORY_SIZE.") % {"limit": limit}, status=413)
@@ -98,7 +108,7 @@ def clipboard_view(request):
         return import_error(_("Clipboard import failed unexpectedly."), status=500)
     message = _("Browser content imported into your clipboard.")
     messages.success(request, message)
-    return JsonResponse({"message": message})
+    return JsonResponse({**data, "message": message})
 
 
 @transaction.atomic

@@ -8,11 +8,11 @@ const payload = JSON.stringify({format: 'djangocms-transfer', version: 1, kind: 
 const flush = async () => { for (let i = 0; i < 5; i++) { await new Promise(setImmediate); } };
 
 function setup(options = {}) {
-    const messages = [], writes = [], requests = [];
+    const messages = [], writes = [], requests = [], changes = [];
     const timers = new Map();
     let click, capture, reloads = 0, closedMenus = 0;
     class StructureBoard {
-        invalidateState() { return 'cms-result'; }
+        invalidateState(action, data) { changes.push({action, data}); return 'cms-result'; }
     }
     class Plugin {
         constructor() { this.options = {}; }
@@ -46,7 +46,8 @@ function setup(options = {}) {
         fetch: async (url, settings = {}) => {
             requests.push({url, ...settings});
             if (options.fetch) { return options.fetch(url, settings); }
-            return {ok: options.ok !== false, status: options.status || 200, text: async () => payload};
+            return {ok: options.ok !== false, status: options.status || 200, text: async () => payload,
+                json: async () => ({html: '<div>clipboard</div>', plugins: [{plugin_id: '456'}]})};
         }
     };
     if (options.gestureWrite) {
@@ -65,7 +66,7 @@ function setup(options = {}) {
         }},
         preventDefault() {}, stopImmediatePropagation() {}
     });
-    return {context, clipboard, messages, writes, requests,
+    return {context, clipboard, messages, writes, requests, changes,
         click: kind => kind === 'copy' ? new Plugin().copyPlugin() : click(event(kind)), capture,
         copy: (options, language) => new Plugin().copyPlugin(options, language),
         success: (action = 'COPY', options = {}) => context.CMS.API.StructureBoard.invalidateState(action, {plugins: [{plugin_id: '123', plugin_parent: ''}]}, options),
@@ -83,7 +84,12 @@ test('import intercepts toolbar navigation and submits JSON with CSRF', async ()
     assert.equal(app.requests.length, 1);
     assert.equal(await app.requests[0].body.get('clipboard').text(), payload);
     assert.equal(app.requests[0].headers['X-CSRFToken'], 'csrf-token');
-    assert.equal(app.reloads, 1);
+    assert.equal(app.reloads, 0);
+    assert.equal(app.changes.length, 1);
+    assert.equal(app.changes[0].action, 'COPY');
+    assert.equal(app.changes[0].data.html, '<div>clipboard</div>');
+    assert.equal(app.changes[0].data.plugins[0].plugin_id, '456');
+    assert.equal(app.writes.length, 0);
 });
 
 test('invalid JSON and unrelated JSON never reach the server', async () => {

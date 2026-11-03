@@ -193,8 +193,9 @@
                         'Import was not authorized. Your session or CSRF token may have expired. Reload the page and try again.' :
                         (response.status === 413 ? 'Clipboard content exceeds the server upload limit. Use file import or ask your administrator to increase the limit.' : 'Clipboard content could not be imported. Your CMS clipboard has not changed.')));
                 }
-                // Refresh clipboard controls and Paste availability from the server.
-                window.location.reload();
+                const data = await response.json();
+                // Apply the normal CMS copy response without exporting it again.
+                originalInvalidateState.call(cms.API.StructureBoard, 'COPY', data);
             } catch (error) {
                 message(error.name === 'NotAllowedError' ?
                     'Clipboard access was denied. Your CMS clipboard has not changed.' : error.message, true);
