@@ -1,13 +1,9 @@
 import json
-from copy import deepcopy
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from cms.models import CMSPlugin
 from cms.utils.urlutils import admin_reverse
-
-from djangocms_transfer.clipboard import parse_clipboard
-from djangocms_transfer.validation import clean_plugin_data
 
 from .abstract import FunctionalityBaseTestCase
 
@@ -71,35 +67,27 @@ class EntangledImportTests(FunctionalityBaseTestCase):
                         self.assertEqual(column.parent_id, root.pk)
                         self.assertEqual(text.parent_id, column.pk)
                         self.assertEqual(text.get_bound_plugin().json, self.payload["plugins"][2]["data"]["json"])
+                        self.assertEqual(column.get_bound_plugin().config, self.payload["plugins"][1]["data"]["config"])
                     config = root.get_bound_plugin().config
                     self.assertEqual(config["plugin_title"], {"show": False, "title": ""})
                     self.assertIsNone(config["row_cols_xs"])
                     self.assertEqual(config["padding_x"], "")
 
-    def test_nested_values_are_validated_on_both_import_paths(self):
+    def test_imported_grid_can_be_pasted_with_the_cms(self):
         with self.login_user_context(self.user):
-            for browser in (True, False):
-                for key, value in (("vertical_alignment", "invalid"), ("row_cols_xs", 99),
-                                   ("attributes", {"onclick": "alert(1)"})):
-                    with self.subTest(browser=browser, key=key):
-                        payload = deepcopy(self.payload)
-                        payload["plugins"][0]["data"]["config"][key] = value
-                        before = list(CMSPlugin.objects.values_list("pk", flat=True))
-                        response = self.submit(payload, browser)
-                        if browser:
-                            self.assertEqual(response.status_code, 400)
-                            self.assertIn(key, response.json()["error"])
-                        else:
-                            self.assertTrue(response.context["form"].non_field_errors())
-                        self.assertEqual(list(CMSPlugin.objects.values_list("pk", flat=True)), before)
-
-    def test_virtual_cleaners_and_prepare_value_preserve_source_configuration(self):
-        self.payload["plugins"][0]["data"]["config"].update({
-            "plugin_title": {"show": False, "title": "  Title  "}, "devices": None,
-        })
-        original = deepcopy(self.payload)
-        _, plugins = parse_clipboard(self.payload, self.user)
-        cleaned = clean_plugin_data(plugins[0], self.placeholder, "en")
-        self.assertEqual(cleaned["config"]["plugin_title"], {"show": False, "title": "Title"})
-        self.assertIsNone(cleaned["config"]["devices"])
-        self.assertEqual(self.payload, original)
+            response = self.submit(self.payload, True)
+            self.assertEqual(response.status_code, 200)
+            clipboard = response.wsgi_request.toolbar.clipboard
+            root = clipboard.get_plugins("en").first()
+            response = self.client.post(admin_reverse("cms_placeholder_move_plugin"), {
+                "plugin_id": root.pk, "placeholder_id": self.placeholder.pk,
+                "target_language": "en", "target_position": 1,
+                "plugin_parent": "", "move_a_copy": "true",
+            })
+            self.assertEqual(response.status_code, 200, response.content)
+            plugins = list(self.placeholder.get_plugins("en"))
+            self.assertEqual(len(plugins), 9)
+            for column, text in zip(plugins[1::2], plugins[2::2]):
+                self.assertEqual(column.parent_id, plugins[0].pk)
+                self.assertEqual(text.parent_id, column.pk)
+                self.assertEqual(column.get_bound_plugin().config, self.payload["plugins"][1]["data"]["config"])

@@ -63,8 +63,11 @@ use the normal Paste action to insert the content wherever it is allowed.
 
 Clipboard content is validated on import, including installed plugin types and
 your permission to add them. Invalid content leaves your CMS clipboard unchanged.
-File and clipboard imports both run the registered plugin form and model
-validators, including required fields, choices, URL validation and custom cleaners.
+File and clipboard imports both call the plugin model's ``full_clean()`` before
+saving. Validation and normalization of plugin data, including JSON configuration,
+belong in model fields, their validators, or ``Model.clean()``. Plugin editing
+forms are not used during import. CMS identity and tree fields are supplied by
+the destination and excluded from field validation.
 Rich-text sanitization follows the plugin's own save behavior, just as when
 editing that plugin normally; this package does not impose a separate HTML policy.
 Export-hook ``None`` rows are skipped by both import paths.

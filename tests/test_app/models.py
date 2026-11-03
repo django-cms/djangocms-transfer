@@ -30,3 +30,6 @@ class LayoutPluginModel(CMSPlugin):
     ui_item = models.CharField(max_length=30)
     tag_type = models.CharField(max_length=30, blank=True)
     config = models.JSONField(default=dict)
+
+    def get_short_description(self):
+        return self.config.get("plugin_title", {}).get("title", "") or self.config.get("attributes", {}).get("id", "")

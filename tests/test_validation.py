@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from unittest.mock import patch
 
 from django.contrib.auth.models import Permission
@@ -12,9 +13,11 @@ from cms.models.placeholderpluginmodel import PlaceholderReference
 from cms.plugin_pool import plugin_pool
 from cms.utils.urlutils import admin_reverse
 
+from djangocms_transfer.datastructures import ArchivedPlugin
 from djangocms_transfer.exporter import export_plugin
 
 from .abstract import FunctionalityBaseTestCase
+from .test_app.models import Article, Section
 
 
 class ImportValidationTests(FunctionalityBaseTestCase):
@@ -47,19 +50,15 @@ class ImportValidationTests(FunctionalityBaseTestCase):
                     self.assertEqual(response.status_code, 200, response.content)
                     self.assertEqual(CMSPlugin.objects.count(), before + 1)
 
-    def test_both_paths_reject_unsafe_urls_missing_fields_and_invalid_choices(self):
+    def test_both_paths_reject_missing_model_fields_and_invalid_choices(self):
         link = self._create_plugin(plugin_type="LinkPlugin")
         link_row = json.loads(export_plugin(link))[0]
-        unsafe = {**link_row, "data": {**link_row["data"], "link": {"external_link": "javascript:alert(1)"}}}
-        attributes = {**link_row, "data": {**link_row["data"], "attributes": {"onclick": "alert(1)"}}}
         choice = {**link_row, "data": {**link_row["data"], "link_target": "invalid-choice"}}
         missing = {**self.rows[0], "plugin_type": "ArticlePlugin", "data": {"sections": []}}
         oversized = {**missing, "data": {"title": "x" * 51, "sections": []}}
-        invalid_structured = [{**link_row, "data": {**link_row["data"], "link": value}}
-                              for value in (123, "javascript:alert(1)", ["external_link"])]
         with self.login_user_context(self.user):
             for browser in (True, False):
-                for row in (unsafe, attributes, choice, missing, oversized, *invalid_structured):
+                for row in (choice, missing, oversized):
                     with self.subTest(browser=browser, row=row):
                         ids = list(CMSPlugin.objects.values_list("pk", flat=True))
                         response = self.submit([row], browser)
@@ -69,20 +68,95 @@ class ImportValidationTests(FunctionalityBaseTestCase):
                             self.assertTrue(response.context["form"].non_field_errors())
                         self.assertEqual(list(CMSPlugin.objects.values_list("pk", flat=True)), ids)
 
-    def test_custom_form_cleaners_are_applied_and_persisted(self):
+    def test_model_cleaners_are_applied_without_constructing_forms(self):
         plugin_class = plugin_pool.get_plugin("TextPlugin")
+        calls = []
 
-        class CleanTextForm(plugin_class.form):
-            def clean_body(self):
-                return self.cleaned_data["body"].replace("Hello", "Cleaned")
+        def clean(instance):
+            calls.append(instance)
+            instance.body = instance.body.replace("Hello", "Cleaned")
 
-        with self.login_user_context(self.user), patch.object(plugin_class, "form", CleanTextForm):
+        with self.login_user_context(self.user), patch.object(plugin_class.model, "clean", clean):
+            with patch.object(plugin_class, "get_form", side_effect=AssertionError("Import must not use forms")):
+                with patch.object(plugin_class.form, "__init__", side_effect=AssertionError("Import must not use forms")):
+                    for browser in (True, False):
+                        with self.subTest(browser=browser):
+                            before = len(calls)
+                            response = self.submit(self.rows, browser)
+                            self.assertEqual(response.status_code, 200, response.content)
+                            plugin = CMSPlugin.objects.order_by("-pk").first().get_bound_plugin()
+                            self.assertEqual(plugin.body, "Cleaned World!")
+                            self.assertEqual(len(calls), before + 1)
+
+    def test_model_clean_errors_rollback_both_import_paths(self):
+        model = plugin_pool.get_plugin("TextPlugin").model
+        with self.login_user_context(self.user):
+            for browser in (True, False):
+                ids = list(CMSPlugin.objects.values_list("pk", flat=True))
+                with patch.object(model, "clean", side_effect=ValidationError({"body": "Rejected by model"})):
+                    response = self.submit(self.rows, browser)
+                if browser:
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn("Rejected by model", response.json()["error"])
+                else:
+                    self.assertIn("Rejected by model", str(response.context["form"].non_field_errors()))
+                self.assertEqual(list(CMSPlugin.objects.values_list("pk", flat=True)), ids)
+
+    def test_model_clean_normalizes_json_without_mutating_the_export(self):
+        source = deepcopy(self.rows[0])
+        source["data"]["json"] = {"attributes": None}
+        original = deepcopy(source)
+        model = plugin_pool.get_plugin("TextPlugin").model
+
+        def clean(instance):
+            instance.json["attributes"] = {}
+
+        with patch.object(model, "clean", clean):
+            restored = ArchivedPlugin(**source).restore(self.plugin.placeholder, "en")
+        restored.refresh_from_db()
+        self.assertEqual(restored.json, {"attributes": {}})
+        self.assertEqual(source, original)
+
+    def test_missing_related_objects_are_rejected_on_both_paths(self):
+        section = Section.objects.create(name="Existing")
+        foreign = self._create_plugin(plugin_type="RandomPlugin", title="Article", section=section)
+        many = self._create_plugin(plugin_type="ArticlePlugin", title="Article")
+        foreign_row = json.loads(export_plugin(foreign))[0]
+        many_row = json.loads(export_plugin(many))[0]
+        foreign_row["data"]["section"] = section.pk + 10000
+        many_row["data"]["sections"] = [section.pk + 10000]
+        invalid_foreign = deepcopy(foreign_row)
+        invalid_foreign["data"]["section"] = "not-an-id"
+        invalid_many = deepcopy(many_row)
+        invalid_many["data"]["sections"] = ["not-an-id"]
+        with self.login_user_context(self.user):
+            for browser in (True, False):
+                for row in (foreign_row, many_row, invalid_foreign, invalid_many):
+                    with self.subTest(browser=browser, plugin=row["plugin_type"]):
+                        ids = list(CMSPlugin.objects.values_list("pk", flat=True))
+                        response = self.submit([row], browser)
+                        if browser:
+                            self.assertEqual(response.status_code, 400, response.content)
+                        else:
+                            self.assertTrue(response.context["form"].non_field_errors())
+                        self.assertEqual(list(CMSPlugin.objects.values_list("pk", flat=True)), ids)
+
+    def test_model_clean_relation_changes_are_persisted_on_both_paths(self):
+        original = Section.objects.create(name="Original")
+        replacement = Section.objects.create(name="Validated")
+        plugin = self._create_plugin(plugin_type="RandomPlugin", title="Article", section=original)
+        rows = json.loads(export_plugin(plugin))
+
+        def clean(instance):
+            instance.section = replacement
+
+        with self.login_user_context(self.user), patch.object(Article, "clean", clean):
             for browser in (True, False):
                 with self.subTest(browser=browser):
-                    response = self.submit(self.rows, browser)
-                    self.assertEqual(response.status_code, 200)
-                    plugin = CMSPlugin.objects.order_by("-pk").first().get_bound_plugin()
-                    self.assertEqual(plugin.body, "Cleaned World!")
+                    response = self.submit(rows, browser)
+                    self.assertEqual(response.status_code, 200, response.content)
+                    restored = CMSPlugin.objects.order_by("-pk").first().get_bound_plugin()
+                    self.assertEqual(restored.section_id, replacement.pk)
 
     def test_nested_json_is_not_interpreted_as_plugin_metadata(self):
         value = {"plugin_type": "ordinary value", "plugins": [None, {"body": "nested data"}]}

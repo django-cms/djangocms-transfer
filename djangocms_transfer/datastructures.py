@@ -1,11 +1,14 @@
 from collections import namedtuple
+from copy import deepcopy
 
+from django.core.exceptions import ValidationError
 from django.core.serializers import deserialize
+from django.core.serializers.base import DeserializationError
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
+from django.utils.translation import gettext as _
 
-from cms.api import add_plugin
 from cms.models import CMSPlugin
 
 from . import custom_process_hook, get_serializer_name
@@ -32,60 +35,40 @@ class ArchivedPlugin(BaseArchivedPlugin):
             "fields": self.data,
         }
 
-        # TODO: Handle deserialization error
-        return list(deserialize(get_serializer_name(), [data]))[0]
+        try:
+            return list(deserialize(get_serializer_name(), [data]))[0]
+        except DeserializationError as error:
+            raise ValidationError(_("Invalid plugin field values: %(error)s"),
+                                  params={"error": str(error)}) from error
 
     @transaction.atomic
     def restore(self, placeholder, language, parent=None, request=None):
-        from .validation import clean_plugin_data, parse_plugins
+        from .validation import parse_plugins
 
         parse_plugins([self._replace(parent_id=None)], getattr(request, "user", None))
-        m2m_data = {}
-        data = clean_plugin_data(self, placeholder, language, parent, request)
+        deserialized = deepcopy(self.deserialized_instance)
+        plugin = deserialized.object
 
-        if self.model is not CMSPlugin:
-            fields = self.model._meta.get_fields()
-            for field in fields:
-                if field.related_model is not None:
-                    if field.many_to_many:
-                        if data.get(field.name):
-                            m2m_data[field.name] = data[field.name]
-                        data.pop(field.name, None)
-                    elif data.get(field.name):
-                        try:
-                            obj = field.related_model.objects.get(pk=data[field.name])
-                        except field.related_model.DoesNotExist:
-                            obj = None
-                        data[field.name] = obj
-
-        # The "data" field for LinkPlugin have key, "target"
-        # which clashes with :func:add_plugin when unpacked.
-        plugin_target = data.pop("target", "")
-
-        plugin = add_plugin(
-            placeholder,
-            self.plugin_type,
-            language,
-            position="last-child",
-            target=parent,
-            **data,
-        )
-
-        field = ("target",) if plugin_target else ()
-        # An empty *update_fields* iterable will skip the save
-        plugin.target = plugin_target
-        plugin.save(update_fields=field)
-
-        if self.model is not CMSPlugin:
-            fields = self.model._meta.get_fields()
-            for field in fields:
-                if field.related_model is not None and m2m_data.get(field.name):
-                    if field.many_to_many:
-                        objs = field.related_model.objects.filter(
-                            pk__in=m2m_data[field.name]
-                        )
-                        attr = getattr(plugin, field.name)
-                        attr.set(objs)
+        # The destination owns CMS identity and tree fields. Imported values
+        # are validated on the model before the instance is saved.
+        plugin.placeholder = placeholder
+        plugin.language = language
+        plugin.plugin_type = self.plugin_type
+        plugin.parent = parent
+        plugin.position = placeholder.get_next_plugin_position(language, parent=parent, insert_order="last")
+        internal_fields = {field.name for field in CMSPlugin._meta.fields}
+        internal_fields.update(field.name for field in self.model._meta.fields if field.primary_key)
+        plugin.full_clean(exclude=internal_fields)
+        # Model.full_clean() does not validate many-to-many references on an
+        # unsaved instance. Check them before inserting either side of the tree.
+        for name, values in deserialized.m2m_data.items():
+            field = self.model._meta.get_field(name)
+            related = field.remote_field.model
+            if related._default_manager.filter(pk__in=values).count() != len(set(values)):
+                raise ValidationError({name: _("One or more related objects do not exist.")})
+        placeholder.add_plugin(plugin)
+        for name, values in deserialized.m2m_data.items():
+            getattr(plugin, name).set(values)
 
         # customize plugin-data on import with configured function
         custom_process_hook(
