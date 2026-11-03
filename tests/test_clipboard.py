@@ -6,7 +6,8 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.db import close_old_connections, connection
+from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError, close_old_connections, connection
 from django.test import Client, RequestFactory, TransactionTestCase, override_settings, skipUnlessDBFeature
 
 from cms.api import add_plugin
@@ -96,17 +97,82 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
         with self.login_user_context(self.user):
             clipboard = self.post().wsgi_request.toolbar.clipboard
             original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
+            row = self.payload["plugins"][0]
             invalid = [None, [], {}, {**self.payload, "version": 2},
-                       {**self.payload, "plugins": []}]
+                       {**self.payload, "plugins": []},
+                       {**self.payload, "kind": "unknown"},
+                       {**self.payload, "plugins": {}},
+                       {**self.payload, "plugins": [None]},
+                       {**self.payload, "plugins": [{"plugin_type": "TextPlugin"}]},
+                       {**self.payload, "plugins": [row, row]},
+                       {**self.payload, "plugins": [row, {**row, "pk": row["pk"] + 1}]}]
             for field, value in [("plugin_type", "MissingPlugin"), ("parent_id", 99999),
+                                 ("plugin_type", []), ("plugin_type", "PluginImporter"),
+                                 ("parent_id", True), ("pk", 0), ("pk", True),
                                  ("pk", []), ("data", {"placeholder_id": 42}),
-                                 ("data", {"cmsplugin_ptr": 42}), ("position", "bad")]:
+                                 ("data", None), ("data", []),
+                                 ("data", {"cmsplugin_ptr": 42}), ("position", "bad"),
+                                 ("position", 0), ("position", True)]:
                 row = {**self.payload["plugins"][0], field: value}
                 invalid.append({**self.payload, "plugins": [row]})
             for payload in invalid:
                 with self.subTest(payload=payload):
                     self.assertEqual(self.post(payload).status_code, 400)
                     self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
+
+    def test_malformed_json_preserves_clipboard(self):
+        with self.login_user_context(self.user):
+            clipboard = self.post().wsgi_request.toolbar.clipboard
+            original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
+            for raw in (b"", b"{", b"not json", b"\xff"):
+                with self.subTest(raw=raw):
+                    response = self.client.post(admin_reverse("cms_transfer_clipboard"),
+                                                raw, content_type="application/json")
+                    self.assertEqual(response.status_code, 400)
+                    self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
+
+    def test_partial_import_failure_rolls_back_plugins_and_placeholder_wrapper(self):
+        def fail_after_import(*args, **kwargs):
+            import_plugins(*args, **kwargs)
+            raise IntegrityError("Failed after creating plugins")
+
+        with self.login_user_context(self.user):
+            clipboard = self.post().wsgi_request.toolbar.clipboard
+            original_ids = list(CMSPlugin.objects.values_list("pk", flat=True))
+            original_placeholders = list(Placeholder.objects.values_list("pk", flat=True))
+            for kind in ("plugin", "placeholder"):
+                with self.subTest(kind=kind):
+                    self.payload["kind"] = kind
+                    with patch("djangocms_transfer.clipboard.import_plugins", side_effect=fail_after_import):
+                        self.assertEqual(self.post().status_code, 400)
+                    self.assertEqual(list(CMSPlugin.objects.values_list("pk", flat=True)), original_ids)
+                    self.assertEqual(list(Placeholder.objects.values_list("pk", flat=True)), original_placeholders)
+                    self.assertEqual(clipboard.get_plugins().get().get_bound_plugin().body, self.TEXT_BODY)
+
+    def test_missing_clipboard_is_forbidden(self):
+        request = RequestFactory().get("/clipboard/")
+        request.user = self.user
+        request.toolbar = SimpleNamespace(clipboard=None)
+        with self.assertRaises(PermissionDenied):
+            clipboard_view(request)
+
+    def test_inactive_or_nonstaff_users_are_forbidden(self):
+        for active, staff in ((False, True), (True, False), (False, False)):
+            with self.subTest(active=active, staff=staff):
+                request = RequestFactory().get("/clipboard/")
+                request.user = SimpleNamespace(is_active=active, is_staff=staff)
+                with self.assertRaises(PermissionDenied):
+                    clipboard_view(request)
+
+    def test_unsupported_http_methods_do_not_modify_clipboard(self):
+        with self.login_user_context(self.user):
+            clipboard = self.post().wsgi_request.toolbar.clipboard
+            original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
+            for method in (self.client.put, self.client.patch, self.client.delete):
+                response = method(admin_reverse("cms_transfer_clipboard"),
+                                  json.dumps(self.payload), content_type="application/json")
+                self.assertEqual(response.status_code, 405)
+                self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
 
     def test_failed_restore_rolls_back_clipboard(self):
         with self.login_user_context(self.user):
@@ -118,8 +184,11 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
 
     def test_plugin_permission_is_required(self):
         with self.login_user_context(self.user):
+            clipboard = self.post().wsgi_request.toolbar.clipboard
+            original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
             with patch("djangocms_transfer.clipboard.has_plugin_permission", return_value=False):
                 self.assertEqual(self.post().status_code, 403)
+            self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
 
     def test_other_users_clipboard_is_untouched(self):
         other = self._create_user("other", True, True)

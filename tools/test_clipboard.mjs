@@ -176,3 +176,74 @@ test('a slow earlier export cannot overwrite a newer copy', async () => {
     await flush();
     assert.deepEqual(app.writes, ['new content']);
 });
+
+test('missing clipboard API reports errors without making server requests', async () => {
+    const app = setup();
+    delete app.context.navigator.clipboard;
+    await app.click('import');
+    assert.match(app.messages[0].message, /unavailable/);
+    assert.equal(app.copy(), 'copy-started');
+    assert.equal(app.success(), 'cms-result');
+    await flush();
+    assert.match(app.messages[1].message, /Copied to CMS clipboard/);
+    assert.equal(app.requests.length, 0);
+    assert.equal(app.reloads, 0);
+});
+
+test('server validation errors and server failures do not reload the editor', async () => {
+    for (const status of [400, 500]) {
+        const app = setup({ok: false, status});
+        await app.click('import');
+        assert.match(app.messages[0].message, /could not be imported/);
+        assert.equal(app.messages[0].error, true);
+        assert.equal(app.reloads, 0);
+        // A failed import must release the busy state so the user can retry.
+        await app.click('import');
+        assert.equal(app.requests.length, 2);
+    }
+});
+
+test('network failure on import reports an error and permits retry', async () => {
+    const app = setup({fetch: async () => { throw new Error('Network unavailable'); }});
+    await app.click('import');
+    assert.equal(app.messages[0].message, 'Network unavailable');
+    assert.equal(app.reloads, 0);
+    await app.click('import');
+    assert.equal(app.requests.length, 2);
+});
+
+test('failed export never changes the browser clipboard or blocks CMS copy', async () => {
+    for (const gestureWrite of [false, true]) {
+        for (const networkFailure of [false, true]) {
+            const app = setup({gestureWrite, ok: false,
+                ...(networkFailure ? {fetch: async () => { throw new Error('Network unavailable'); }} : {})});
+            assert.equal(app.copy(), 'copy-started');
+            assert.equal(app.success(), 'cms-result');
+            await flush();
+            assert.equal(app.writes.length, 0);
+            assert.equal(app.context.CMS.API.locked, false);
+            assert.match(app.messages[0].message, /Copied to CMS clipboard/);
+        }
+    }
+});
+
+test('synchronous ClipboardItem write failure falls back to writeText', async () => {
+    const app = setup({gestureWrite: true});
+    app.clipboard.write = () => { throw new Error('Write unsupported'); };
+    app.copy();
+    app.success();
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+    assert.equal(app.messages.length, 0);
+});
+
+test('denied gesture-based write reports failure without affecting CMS copy', async () => {
+    const app = setup({gestureWrite: true});
+    app.clipboard.write = async () => { throw new Error('Permission denied'); };
+    assert.equal(app.copy(), 'copy-started');
+    assert.equal(app.success(), 'cms-result');
+    await flush();
+    assert.equal(app.writes.length, 0);
+    assert.match(app.messages[0].message, /Copied to CMS clipboard/);
+    assert.equal(app.context.CMS.API.locked, false);
+});
