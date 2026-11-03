@@ -1,6 +1,9 @@
 __version__ = "2.0.1"
 
-default_app_config = "djangocms_transfer.apps.TranferConfig"
+def browser_clipboard_enabled():
+    from django.conf import settings
+
+    return getattr(settings, "DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD", True)
 
 
 def get_serializer_name(default="python"):

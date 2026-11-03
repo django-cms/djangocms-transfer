@@ -1,0 +1,178 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import test from 'node:test';
+import vm from 'node:vm';
+
+const source = readFileSync(new URL('../djangocms_transfer/static/djangocms_transfer/js/clipboard.js', import.meta.url), 'utf8');
+const payload = JSON.stringify({format: 'djangocms-transfer', version: 1, kind: 'plugin', plugins: []});
+const flush = async () => { for (let i = 0; i < 5; i++) { await new Promise(setImmediate); } };
+
+function setup(options = {}) {
+    const messages = [], writes = [], requests = [];
+    const timers = new Map();
+    let click, capture, reloads = 0;
+    class StructureBoard {
+        invalidateState() { return 'cms-result'; }
+    }
+    class Plugin {
+        constructor() { this.options = {}; }
+        copyPlugin() { return 'copy-started'; }
+    }
+    const clipboard = {
+        readText: async () => options.text ?? payload,
+        writeText: async text => { writes.push(text); }
+    };
+    const context = {
+        Blob,
+        setTimeout: handler => { const id = timers.size + 1; timers.set(id, handler); return id; },
+        clearTimeout: id => timers.delete(id),
+        addEventListener() {},
+        navigator: {clipboard},
+        document: {
+            readyState: 'complete', documentElement: {dataset: {}},
+            querySelector: () => ({matches: () => false, querySelector: () => ({href: '/clipboard/'})}),
+            addEventListener: (name, handler, useCapture) => { click = handler; capture = useCapture; }
+        },
+        location: {reload: () => { reloads++; }},
+        CMS: {
+            StructureBoard, Plugin,
+            config: {csrf: 'csrf-token', clipboard: {id: '42'}},
+            API: {locked: false, StructureBoard: new StructureBoard(), Messages: {open: message => messages.push(message)}}
+        },
+        fetch: async (url, settings = {}) => {
+            requests.push({url, ...settings});
+            if (options.fetch) { return options.fetch(url, settings); }
+            return {ok: options.ok !== false, status: options.status || 200, text: async () => payload};
+        }
+    };
+    if (options.gestureWrite) {
+        context.ClipboardItem = class { constructor(data) { this.data = data; } };
+        clipboard.write = async items => {
+            const blob = await items[0].data['text/plain'];
+            writes.push(await blob.text());
+        };
+    }
+    context.window = context;
+    vm.runInNewContext(source, context);
+    const event = kind => ({
+        target: {closest: selector => {
+            if (kind === 'copy' && selector === '[data-rel="copy"]') { return {closest: () => null}; }
+            return kind === 'import' && selector === '.cms-transfer-clipboard-import' ? {} : null;
+        }},
+        preventDefault() {}, stopImmediatePropagation() {}
+    });
+    return {context, clipboard, messages, writes, requests,
+        click: kind => kind === 'copy' ? new Plugin().copyPlugin() : click(event(kind)), capture,
+        copy: (options, language) => new Plugin().copyPlugin(options, language),
+        success: (action = 'COPY') => context.CMS.API.StructureBoard.invalidateState(action),
+        failure: () => { for (const handler of timers.values()) { handler(); } },
+        get reloads() { return reloads; }
+    };
+}
+
+test('import intercepts toolbar navigation and submits JSON with CSRF', async () => {
+    const app = setup();
+    assert.equal(app.capture, true);
+    await app.click('import');
+    assert.equal(app.requests.length, 1);
+    assert.equal(app.requests[0].body, payload);
+    assert.equal(app.requests[0].headers['X-CSRFToken'], 'csrf-token');
+    assert.equal(app.reloads, 1);
+});
+
+test('invalid JSON and unrelated JSON never reach the server', async () => {
+    for (const text of ['bad json', '{}', 'null']) {
+        const app = setup({text});
+        await app.click('import');
+        assert.equal(app.requests.length, 0);
+        assert.equal(app.messages[0].error, true);
+        assert.equal(app.reloads, 0);
+    }
+});
+
+test('permission denial or clipboard denial does not refresh or replace content', async () => {
+    const app = setup({ok: false, status: 403});
+    await app.click('import');
+    assert.match(app.messages[0].message, /permission/);
+    assert.equal(app.reloads, 0);
+    app.clipboard.readText = async () => { throw Object.assign(new Error(), {name: 'NotAllowedError'}); };
+    await app.click('import');
+    assert.match(app.messages[1].message, /denied/);
+    assert.equal(app.requests.length, 1);
+});
+
+test('successful CMS copy exports its clipboard; ordinary Paste does not', async () => {
+    const app = setup();
+    app.success('PASTE');
+    await flush();
+    assert.equal(app.requests.length, 0);
+    await app.click('copy');
+    app.success();
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+});
+
+test('gesture-based write waits for the CMS copy and export', async () => {
+    const app = setup({gestureWrite: true});
+    await app.click('copy');
+    assert.equal(app.writes.length, 0);
+    app.success();
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+});
+
+test('failed CMS copy does not write browser clipboard', async () => {
+    const app = setup({gestureWrite: true});
+    await app.click('copy');
+    app.failure();
+    await flush();
+    assert.equal(app.requests.length, 0);
+    assert.equal(app.writes.length, 0);
+});
+
+test('failed browser write reports that CMS copy still succeeded', async () => {
+    const app = setup();
+    app.clipboard.writeText = async () => { throw new Error('denied'); };
+    await app.click('copy');
+    app.success();
+    await flush();
+    assert.match(app.messages[0].message, /Copied to CMS clipboard/);
+    assert.equal(app.reloads, 0);
+});
+
+test('slow export does not delay CMS completion or lock the editor', async () => {
+    let resolveExport;
+    const app = setup({fetch: () => new Promise(resolve => { resolveExport = resolve; })});
+    await app.click('copy');
+    assert.equal(app.success(), 'cms-result');
+    assert.equal(app.context.CMS.API.locked, false);
+    assert.equal(app.writes.length, 0);
+    resolveExport({ok: true, text: async () => payload});
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+});
+
+test('copying between languages or pasting does not export browser content', async () => {
+    const app = setup();
+    app.copy(undefined, 'de');
+    app.success('PASTE');
+    app.copy({target: '100'});
+    app.success();
+    await flush();
+    assert.equal(app.requests.length, 0);
+    assert.equal(app.writes.length, 0);
+});
+
+test('a slow earlier export cannot overwrite a newer copy', async () => {
+    const responses = [];
+    const app = setup({fetch: () => new Promise(resolve => responses.push(resolve))});
+    app.copy();
+    app.success();
+    app.copy();
+    app.success();
+    responses[1]({ok: true, text: async () => 'new content'});
+    await flush();
+    responses[0]({ok: true, text: async () => 'old content'});
+    await flush();
+    assert.deepEqual(app.writes, ['new content']);
+});
