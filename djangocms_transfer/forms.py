@@ -103,19 +103,23 @@ class PluginExportForm(ExportImportForm):
         placeholder = data["placeholder"]
 
         if cms_pagecontent:
-            return "{}.json".format(cms_pagecontent.page.get_slug(language=language))
-        elif placeholder and placeholder.page is not None:
-            return "{}_{}.json".format(
-                placeholder.page.get_slug(language=language),
-                slugify(placeholder.slot),
-            )
-        elif plugin is not None and plugin.page is not None:
-            return "{}_{}.json".format(
-                plugin.page.get_slug(language=language),
-                slugify(plugin.get_short_description()),
-            )
+            page = cms_pagecontent.page
+            suffix = ""
+        elif placeholder or plugin:
+            source_placeholder = placeholder or plugin.placeholder
+            page = source_placeholder.page
+            cms_pagecontent = source_placeholder.source
+            suffix = slugify(placeholder.slot if placeholder else plugin.get_short_description())
         else:
             return "plugins.json"
+
+        if page is None:
+            return "plugins.json"
+        # Draft slugs belong to PageContent on newer CMS versions and may not
+        # have a routable PageUrl yet. CMS 4.1 stores slugs on PageUrl only.
+        slug = getattr(cms_pagecontent, "slug", None) if isinstance(cms_pagecontent, PageContent) else None
+        slug = slug or page.get_slug(language=language) or f"page-{page.pk}"
+        return f"{slug}_{suffix}.json" if suffix else f"{slug}.json"
 
     def run_export(self):
         data = self.cleaned_data

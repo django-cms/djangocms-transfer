@@ -2,6 +2,7 @@ import json
 import os
 import unittest
 from tempfile import mkdtemp
+from unittest.mock import patch
 
 from django.core.files import File
 
@@ -11,6 +12,33 @@ from .abstract import FunctionalityBaseTestCase
 
 
 class PluginExportFormTest(FunctionalityBaseTestCase):
+    def test_filenames_use_unpublished_pagecontent_slug(self):
+        if not hasattr(self.page_content, "slug"):
+            self.skipTest("This CMS version stores slugs on PageUrl only")
+        placeholder = self.page_content.get_placeholders().get(slot="content")
+        plugin = self._create_plugin()
+        self.page_content.slug = "unpublished-draft"
+        self.page_content.save(update_fields=["slug"])
+        self.page.urls.all().delete()
+        self.page.urls_cache = None
+        self.assertIsNone(self.page.get_slug(language="en"))
+        for target, expected in (
+            ({"cms_pagecontent": self.page_content}, "unpublished-draft.json"),
+            ({"placeholder": placeholder}, "unpublished-draft_content.json"),
+            ({"plugin": plugin}, "unpublished-draft_hello-world.json"),
+        ):
+            with self.subTest(expected=expected):
+                form = PluginExportForm(data={"language": "en", **target})
+                self.assertTrue(form.is_valid(), form.errors)
+                self.assertEqual(form.get_filename(), expected)
+
+    def test_filename_without_any_slug_uses_page_id(self):
+        form = PluginExportForm(data={"language": "en", "cms_pagecontent": self.page_content})
+        self.assertTrue(form.is_valid(), form.errors)
+        content = form.cleaned_data["cms_pagecontent"]
+        with patch.object(content, "slug", "", create=True), patch.object(content.page, "get_slug", return_value=None):
+            self.assertEqual(form.get_filename(), f"page-{content.page_id}.json")
+
     def test_get_filename(self):
         placeholder = self.page_content.get_placeholders().get(slot="content")
         plugin = self._create_plugin()
