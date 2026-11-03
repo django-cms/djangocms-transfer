@@ -9,4 +9,3 @@ pytest-django
 
 # for testing purposes
 djangocms-link
-django-entangled>=0.6

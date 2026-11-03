@@ -8,28 +8,13 @@ from django.utils.translation import gettext_lazy as _
 
 from cms.models import CMSPlugin, PageContent, Placeholder
 
-from .datastructures import ArchivedPlaceholder, ArchivedPlugin
+from .datastructures import ArchivedPlaceholder
 from .exporter import export_page, export_placeholder, export_plugin
 from .importer import import_plugins, import_plugins_to_page
 from .validation import parse_plugins
 
 
-def _object_version_data_hook(data, for_page=False):
-    if not data:
-        return data
-
-    if "plugins" in data:
-        return ArchivedPlaceholder(
-            slot=data["placeholder"],
-            plugins=data["plugins"],
-        )
-
-    if "plugin_type" in data:
-        return ArchivedPlugin(**data)
-    return data
-
-
-def _get_parsed_data(file_obj, for_page=False):
+def _get_parsed_data(file_obj):
     raw = file_obj.read().decode("utf-8")
     data = json.loads(raw)
     if isinstance(data, list):
