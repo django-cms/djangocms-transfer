@@ -1,5 +1,6 @@
 from django.test import override_settings
 
+from cms.constants import REFRESH_PAGE
 from cms.toolbar.items import LinkItem
 from cms.toolbar.utils import get_object_edit_url
 from cms.toolbar_pool import toolbar_pool
@@ -121,3 +122,5 @@ class PluginImporterToolbarTestCase(FunctionalityBaseTestCase):
                 item for item in page_menu.items
                 if getattr(item, "name", "").startswith("Import")
             ])
+            import_item = next(item for item in page_menu.items if getattr(item, "name", "").startswith("Import"))
+            self.assertEqual(import_item.on_close, REFRESH_PAGE)

@@ -3,6 +3,7 @@ import json
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from cms.constants import REFRESH_PAGE
 from cms.plugin_pool import plugin_pool
 from cms.utils.urlutils import admin_reverse
 
@@ -39,6 +40,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             self.assertEqual(len(menu_items), 2)
             self.assertEqual(menu_items[0].name, "Export plugins")
             self.assertEqual(menu_items[1].name, "Import plugins")
+            self.assertEqual(menu_items[1].attributes["on-close"], REFRESH_PAGE)
             self.assertEqual(
                 menu_items[0].url,
                 "/en/admin/cms/page/plugin/plugin_importer/export-plugins/?language=en&plugin=1"
@@ -53,6 +55,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
         with self.subTest("extra placeholder menu items"):
             placeholder = self.page_content.get_placeholders().get(slot="content")
             menu_items = self.plugin_importer.get_extra_placeholder_menu_items(request, placeholder)
+            self.assertEqual(menu_items[1].attributes["on-close"], REFRESH_PAGE)
             self.assertEqual(
                 menu_items[0].url,
                 "/en/admin/cms/page/plugin/plugin_importer/export-plugins/?language=en&placeholder=1"
@@ -110,8 +113,8 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 "language": "en", "placeholder": [placeholder.id],
                 "import_file": SimpleUploadedFile("file.txt", b"[null, null]")
             }
-            with self.assertRaises(IndexError):
-                self.client.post(path=request_path, data=post_data)
+            response = self.client.post(path=request_path, data=post_data)
+            self.assertEqual(response.status_code, 200)
 
             # create plugins in the placeholder
             text_plugin = self._create_plugin()
@@ -126,12 +129,11 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             }
             response = self.client.post(path=request_path, data=post_data)
             self.assertIn(b'<div class="success"></div>', response.content)
-            self.assertEqual(response.context[2].template_name, "djangocms_transfer/placeholder_close_frame.html")
+            self.assertTemplateUsed(response, "djangocms_transfer/placeholder_close_frame.html")
 
-            structure_data = json.loads(response.context["structure_data"])
-            # Since the import file is empty, only child plugins gets
-            # passed to the frontend data bridge
-            self.assertEqual(len(structure_data["plugins"]), 1)
+            self.assertNotIn("structure_data", response.context)
+            self.assertContains(response, 'class="cms-close-frame"')
+            self.assertNotContains(response, "<script")
 
             # POST placeholder import: simple data
             post_data["import_file"] = SimpleUploadedFile(
@@ -141,9 +143,9 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             response = self.client.post(path=request_path, data=post_data)
             self.assertIn(b'<div class="success"></div>', response.content)
 
-            structure_data = json.loads(response.context["structure_data"])
-            # newly imported plugin and child plugin gets passed to the frontend data bridge
-            self.assertEqual(len(structure_data["plugins"]), 2)
+            self.assertNotIn("structure_data", response.context)
+            self.assertNotContains(response, "<script")
+            self.assertEqual(placeholder.get_plugins("en").count(), 4)
 
     def test_import_plugin_views_for_plugin(self):
         # create plugins
@@ -165,8 +167,8 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 "language": "en", "plugin": [text_plugin.id],
                 "import_file": SimpleUploadedFile("file.txt", b"[null, null]")
             }
-            with self.assertRaises(IndexError):
-                self.client.post(path=request_path, data=post_data)
+            response = self.client.post(path=request_path, data=post_data)
+            self.assertEqual(response.status_code, 200)
 
             # plugin import on TextPlugin
             post_data["import_file"] = SimpleUploadedFile(

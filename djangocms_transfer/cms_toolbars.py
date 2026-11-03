@@ -2,6 +2,7 @@ from django.forms import Media
 from django.utils.http import urlencode
 from django.utils.translation import gettext
 
+from cms.constants import REFRESH_PAGE
 from cms.models import PageContent
 from cms.toolbar.items import LinkItem
 from cms.toolbar_base import CMSToolbar
@@ -73,5 +74,5 @@ class PluginImporter(CMSToolbar):
             gettext("Import"),
             url=admin_reverse("cms_import_plugins") + "?" + data,
             disabled=not_edit_mode,
-            on_close=getattr(self.toolbar, "request_path", self.request.path),
+            on_close=REFRESH_PAGE,
         )

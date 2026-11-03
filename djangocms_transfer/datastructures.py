@@ -36,9 +36,12 @@ class ArchivedPlugin(BaseArchivedPlugin):
         return list(deserialize(get_serializer_name(), [data]))[0]
 
     @transaction.atomic
-    def restore(self, placeholder, language, parent=None):
+    def restore(self, placeholder, language, parent=None, request=None):
+        from .validation import clean_plugin_data, parse_plugins
+
+        parse_plugins([self._replace(parent_id=None)], getattr(request, "user", None))
         m2m_data = {}
-        data = self.data.copy()
+        data = clean_plugin_data(self, placeholder, language, parent, request)
 
         if self.model is not CMSPlugin:
             fields = self.model._meta.get_fields()

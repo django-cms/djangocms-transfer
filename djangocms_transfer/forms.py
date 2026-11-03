@@ -11,6 +11,7 @@ from cms.models import CMSPlugin, PageContent, Placeholder
 from .datastructures import ArchivedPlaceholder, ArchivedPlugin
 from .exporter import export_page, export_placeholder, export_plugin
 from .importer import import_plugins, import_plugins_to_page
+from .validation import parse_plugins
 
 
 def _object_version_data_hook(data, for_page=False):
@@ -30,7 +31,12 @@ def _object_version_data_hook(data, for_page=False):
 
 def _get_parsed_data(file_obj, for_page=False):
     raw = file_obj.read().decode("utf-8")
-    return json.loads(raw, object_hook=_object_version_data_hook)
+    data = json.loads(raw)
+    if isinstance(data, list):
+        return [ArchivedPlaceholder(item["placeholder"], item["plugins"])
+                if isinstance(item, dict) and set(item) == {"placeholder", "plugins"} else item
+                for item in data]
+    return data
 
 
 class ExportImportForm(forms.Form):
@@ -136,12 +142,17 @@ class PluginExportForm(ExportImportForm):
 
 
 class PluginImportForm(ExportImportForm):
+    def __init__(self, *args, request=None, **kwargs):
+        self.request = request
+        super().__init__(*args, **kwargs)
+
     import_file = forms.FileField(
         required=True,
         widget=forms.FileInput(attrs={"accept": "application/json"}),
     )
 
     def clean(self):
+        super().clean()
         if self.errors:
             return self.cleaned_data
 
@@ -152,13 +163,16 @@ class PluginImportForm(ExportImportForm):
         except (ValueError, TypeError):
             raise ValidationError("File is not valid")
 
-        first_item = data[0]
-        is_placeholder = isinstance(first_item, ArchivedPlaceholder)
-        page_import = bool(self.cleaned_data["cms_pagecontent"])
-        plugins_import = not page_import
-
-        if (is_placeholder and plugins_import) or (page_import and not is_placeholder):
+        if not isinstance(data, list):
             raise ValidationError("Incorrect json format used.")
+        page_import = bool(self.cleaned_data["cms_pagecontent"])
+        user = getattr(self.request, "user", None)
+        if page_import:
+            if not all(isinstance(item, ArchivedPlaceholder) for item in data):
+                raise ValidationError("Incorrect json format used.")
+            data = [item._replace(plugins=parse_plugins(item.plugins, user)) for item in data]
+        else:
+            data = parse_plugins(data, user)
 
         self.cleaned_data["import_data"] = data
         return self.cleaned_data
@@ -181,6 +195,7 @@ class PluginImportForm(ExportImportForm):
                 placeholders=data["import_data"],
                 pagecontent=target_page,
                 language=language,
+                request=self.request,
             )
         else:
             import_plugins(
@@ -188,4 +203,5 @@ class PluginImportForm(ExportImportForm):
                 placeholder=target_placeholder,
                 language=language,
                 root_plugin_id=target_plugin_id,
+                request=self.request,
             )

@@ -199,8 +199,8 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
             original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
             with patch("djangocms_transfer.clipboard.import_plugins", side_effect=ValueError("private failure details")):
                 response = self.post()
-                self.assertEqual(response.status_code, 400)
-                self.assertIn("could not be imported", response.json()["error"])
+                self.assertEqual(response.status_code, 500)
+                self.assertIn("failed unexpectedly", response.json()["error"])
                 self.assertNotIn("private failure details", response.json()["error"])
             self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)
 
@@ -208,7 +208,7 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
         with self.login_user_context(self.user):
             clipboard = self.post().wsgi_request.toolbar.clipboard
             original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
-            with patch("djangocms_transfer.clipboard.has_plugin_permission", return_value=False):
+            with patch("djangocms_transfer.validation.has_plugin_permission", return_value=False):
                 response = self.post()
                 self.assertEqual(response.status_code, 403)
                 self.assertIn('permission to add "TextPlugin"', response.json()["error"])

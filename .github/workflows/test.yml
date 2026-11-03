@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r tests/requirements/dj61_cms51.txt "psycopg[binary]" .
-      - run: pytest tests/test_clipboard.py
+      - run: pytest tests/test_clipboard.py tests/test_validation.py
 
   clipboard-javascript:
     runs-on: ubuntu-latest

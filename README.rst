@@ -55,7 +55,7 @@ dropdown menu for the specific plugin and select your choice.
 Browser clipboard
 -----------------
 
-In edit mode, copying a plugin (including its children) or a whole placeholder
+In edit mode, copying or cutting a plugin (including its children), or copying a whole placeholder,
 also writes its transfer JSON to the browser clipboard. To transfer it to another
 instance, open that instance's administration menu in the toolbar and choose
 "Import clipboard from browser…". This replaces your django CMS clipboard;
@@ -63,6 +63,11 @@ use the normal Paste action to insert the content wherever it is allowed.
 
 Clipboard content is validated on import, including installed plugin types and
 your permission to add them. Invalid content leaves your CMS clipboard unchanged.
+File and clipboard imports both run the registered plugin form and model
+validators, including required fields, choices, URL validation and custom cleaners.
+Rich-text sanitization follows the plugin's own save behavior, just as when
+editing that plugin normally; this package does not impose a separate HTML policy.
+Export-hook ``None`` rows are skipped by both import paths.
 Both instances need django CMS Transfer installed. Related objects and media
 have the same limitations as file export/import.
 
@@ -81,6 +86,14 @@ Following settings are available:
   Set to ``False`` to disable browser clipboard copying and importing, including
   its toolbar menu item and endpoint. Normal django CMS copy/paste and file
   export/import remain available.
+
+* **DJANGOCMS_TRANSFER_MAX_CLIPBOARD_SIZE** (default: ``20971520``, 20 MiB):
+
+  Maximum size of a browser clipboard upload in bytes; ``None`` disables this
+  limit. Browser imports use multipart file uploads, so they can exceed Django's
+  ``DATA_UPLOAD_MAX_MEMORY_SIZE`` JSON-body limit. Oversized uploads report an
+  error and preserve the CMS clipboard. File import remains available for larger
+  transfers, subject to the site's web-server limits.
 
 * **DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA**:
 

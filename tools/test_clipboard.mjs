@@ -10,26 +10,30 @@ const flush = async () => { for (let i = 0; i < 5; i++) { await new Promise(setI
 function setup(options = {}) {
     const messages = [], writes = [], requests = [];
     const timers = new Map();
-    let click, capture, reloads = 0;
+    let click, capture, reloads = 0, closedMenus = 0;
     class StructureBoard {
         invalidateState() { return 'cms-result'; }
     }
     class Plugin {
         constructor() { this.options = {}; }
         copyPlugin() { return 'copy-started'; }
+        cutPlugin() { return 'cut-started'; }
     }
     const clipboard = {
         readText: async () => options.text ?? payload,
         writeText: async text => { writes.push(text); }
     };
     const context = {
-        Blob,
+        Blob, FormData,
+        MouseEvent: class { constructor(type) { this.type = type; } },
         setTimeout: handler => { const id = timers.size + 1; timers.set(id, handler); return id; },
         clearTimeout: id => timers.delete(id),
         addEventListener() {},
         navigator: {clipboard},
         document: {
+            body: {dispatchEvent: () => { closedMenus++; }},
             readyState: 'complete', documentElement: {dataset: {}},
+            querySelectorAll: () => [],
             querySelector: () => ({matches: () => false, querySelector: () => ({href: '/clipboard/'})}),
             addEventListener: (name, handler, useCapture) => { click = handler; capture = useCapture; }
         },
@@ -64,9 +68,11 @@ function setup(options = {}) {
     return {context, clipboard, messages, writes, requests,
         click: kind => kind === 'copy' ? new Plugin().copyPlugin() : click(event(kind)), capture,
         copy: (options, language) => new Plugin().copyPlugin(options, language),
-        success: (action = 'COPY') => context.CMS.API.StructureBoard.invalidateState(action),
+        success: (action = 'COPY', options = {}) => context.CMS.API.StructureBoard.invalidateState(action, {plugins: [{plugin_id: '123', plugin_parent: ''}]}, options),
+        cut: () => new Plugin().cutPlugin(),
         failure: () => { for (const handler of timers.values()) { handler(); } },
-        get reloads() { return reloads; }
+        get reloads() { return reloads; },
+        get closedMenus() { return closedMenus; }
     };
 }
 
@@ -75,7 +81,7 @@ test('import intercepts toolbar navigation and submits JSON with CSRF', async ()
     assert.equal(app.capture, true);
     await app.click('import');
     assert.equal(app.requests.length, 1);
-    assert.equal(app.requests[0].body, payload);
+    assert.equal(await app.requests[0].body.get('clipboard').text(), payload);
     assert.equal(app.requests[0].headers['X-CSRFToken'], 'csrf-token');
     assert.equal(app.reloads, 1);
 });
@@ -93,7 +99,7 @@ test('invalid JSON and unrelated JSON never reach the server', async () => {
 test('permission denial or clipboard denial does not refresh or replace content', async () => {
     const app = setup({ok: false, status: 403});
     await app.click('import');
-    assert.match(app.messages[0].message, /permission/);
+    assert.match(app.messages[0].message, /session or CSRF/);
     assert.equal(app.reloads, 0);
     app.clipboard.readText = async () => { throw Object.assign(new Error(), {name: 'NotAllowedError'}); };
     await app.click('import');
@@ -126,7 +132,6 @@ test('failed CMS copy does not write browser clipboard', async () => {
     await app.click('copy');
     app.failure();
     await flush();
-    assert.equal(app.requests.length, 0);
     assert.equal(app.writes.length, 0);
 });
 
@@ -277,4 +282,88 @@ test('malformed error responses and internal server errors use a generic message
         assert.match(app.messages[0].message, /could not be imported/);
         assert.equal(app.messages[0].message.includes('traceback'), false);
     }
+});
+
+test('cross-tab COPY cannot complete this tab copy or trigger an export', async () => {
+    const app = setup();
+    app.copy();
+    app.success('COPY', {propagate: false});
+    await flush();
+    assert.equal(app.requests.length, 0);
+    app.success();
+    await flush();
+    assert.match(app.requests[0].url, /\?plugin=123$/);
+    assert.deepEqual(app.writes, [payload]);
+});
+
+test('timed-out browser write retries when a slow CMS copy completes', async () => {
+    const app = setup({gestureWrite: true});
+    app.copy();
+    app.failure();
+    assert.match(app.messages[0].message, /taking longer/);
+    app.success();
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+});
+
+test('failed superseded exports do not report an error after a newer success', async () => {
+    const requests = [];
+    const app = setup({fetch: () => new Promise((resolve, reject) => requests.push({resolve, reject}))});
+    app.copy(); app.success();
+    app.copy(); app.success();
+    requests[1].resolve({ok: true, text: async () => payload});
+    await flush();
+    requests[0].reject(new Error('Old export failed'));
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+    assert.equal(app.messages.length, 0);
+});
+
+test('Cut also updates the browser clipboard', async () => {
+    const app = setup();
+    assert.equal(app.cut(), 'cut-started');
+    app.success('CUT');
+    await flush();
+    assert.deepEqual(app.writes, [payload]);
+});
+
+test('import closes the menu before requesting clipboard permission', async () => {
+    const app = setup();
+    app.clipboard.readText = async () => {
+        assert.equal(app.closedMenus, 1);
+        throw Object.assign(new Error(), {name: 'NotAllowedError'});
+    };
+    await app.click('import');
+    assert.equal(app.closedMenus, 1);
+    assert.equal(app.reloads, 0);
+});
+
+test('upload-size errors from JSON or HTML responses explain the limit', async () => {
+    for (const json of [async () => ({error: 'Clipboard upload limit exceeded.'}),
+                        async () => { throw new Error('HTML proxy response'); }]) {
+        const app = setup({fetch: async () => ({ok: false, status: 413, json})});
+        await app.click('import');
+        assert.match(app.messages[0].message, /limit/);
+        assert.equal(app.reloads, 0);
+    }
+});
+
+test('session expiry and login redirects are not mistaken for successful imports', async () => {
+    for (const response of [{ok: true, status: 200, redirected: true}, {ok: false, status: 401}]) {
+        const app = setup({fetch: async () => response});
+        await app.click('import');
+        assert.match(app.messages[0].message, /session has expired/);
+        assert.equal(app.reloads, 0);
+    }
+});
+
+test('a newer copy in another tab supersedes this tab slow export without errors', async () => {
+    let resolveExport;
+    const app = setup({gestureWrite: true, fetch: () => new Promise(resolve => { resolveExport = resolve; })});
+    app.copy(); app.success();
+    app.success('COPY', {propagate: false});
+    resolveExport({ok: true, text: async () => payload});
+    await flush();
+    assert.equal(app.writes.length, 0);
+    assert.equal(app.messages.length, 0);
 });
