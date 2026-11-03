@@ -1,6 +1,7 @@
 """Shared validation for file and browser imports."""
 
 import json
+from copy import deepcopy
 
 from django import forms
 from django.contrib import admin
@@ -66,8 +67,6 @@ def clean_plugin_data(archived, placeholder, language, parent=None, request=None
     model = plugin_class.model
     instance = model(placeholder=placeholder, language=language,
                      plugin_type=archived.plugin_type, position=1, parent=parent)
-    form_class = plugin_class(model, admin.site).get_form(request) if request is not None else plugin_class.form
-    form = form_class(instance=instance)
     allowed = set(get_plugin_fields(archived.plugin_type))
     allowed -= {field.name for field in model._meta.fields if field.primary_key}
     for name, value in archived.data.items():
@@ -75,18 +74,31 @@ def clean_plugin_data(archived, placeholder, language, parent=None, request=None
         if isinstance(field, (models.CharField, models.TextField)) and value is not None and not isinstance(value, str):
             raise ValidationError(_("%(plugin)s.%(field)s must be text."),
                                   params={"plugin": archived.plugin_type, "field": name})
-    form.fields = {name: field for name, field in form.fields.items() if name in allowed}
+        if not field.many_to_many:
+            # JSON-backed forms derive their virtual fields' initial values from
+            # the instance. Isolate it: form cleaners can mutate nested config.
+            setattr(instance, field.attname, deepcopy(value))
+    form_class = plugin_class(model, admin.site).get_form(request) if request is not None else plugin_class.form
+    for name in getattr(form_class._meta, "entangled_fields", {}):
+        if name in archived.data and not isinstance(archived.data[name], dict):
+            raise ValidationError(_("%(plugin)s.%(field)s must be a JSON object."),
+                                  params={"plugin": archived.plugin_type, "field": name})
+    form = form_class(instance=instance)
+    model_fields = {field.name: field for field in model._meta.get_fields()}
+    form.fields = {name: field for name, field in form.fields.items()
+                   if name in allowed or name not in model_fields}
     values = {}
     for name, field in form.fields.items():
-        model_field = model._meta.get_field(name)
-        value = archived.data.get(name, model_field.get_default())
+        model_field = model_fields.get(name)
+        value = (archived.data.get(name, model_field.get_default()) if model_field is not None
+                 else form.get_initial_for_field(field, name))
         if isinstance(field.widget, forms.MultiWidget):
             if isinstance(model_field, models.JSONField) and value is not None and not isinstance(value, (dict, list)):
                 raise ValidationError(_("Invalid structured plugin field value."))
             try:
                 if isinstance(model_field, models.JSONField):
                     value = {} if value is None else value
-                else:
+                elif model_field is not None:
                     value = model_field.to_python(value)
                 prepared = field.prepare_value(value)
                 if not isinstance(prepared, (list, tuple)):
@@ -96,10 +108,10 @@ def clean_plugin_data(archived, placeholder, language, parent=None, request=None
             if not isinstance(prepared, (list, tuple)) or len(prepared) != len(field.widget.widgets):
                 raise ValidationError(_("Invalid structured plugin field value."))
             values[name] = prepared
-        elif isinstance(value, (dict, list)) and not model_field.is_relation:
-            values[name] = json.dumps(value)
         else:
-            values[name] = value
+            prepared = field.prepare_value(value)
+            values[name] = (json.dumps(prepared) if isinstance(prepared, (dict, list))
+                            and isinstance(field, forms.CharField) else prepared)
         # Uploaded values aren't browser widget submissions. Bypass widget key
         # conventions (e.g. attributes_key[name]) but retain field/form cleaners.
         field.widget.value_from_datadict = lambda data, files, key: data.get(key)
