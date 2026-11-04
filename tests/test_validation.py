@@ -25,7 +25,7 @@ class ImportValidationTests(FunctionalityBaseTestCase):
         super().setUp()
         self.user = self._create_user("validation", True, True)
         self.plugin = self._create_plugin()
-        self.rows = json.loads(export_plugin(self.plugin))
+        self.rows = json.loads(export_plugin(self.plugin))["plugins"]
 
     def submit(self, rows, browser=True, multipart=False):
         if browser:
@@ -52,7 +52,7 @@ class ImportValidationTests(FunctionalityBaseTestCase):
 
     def test_both_paths_reject_missing_model_fields_and_invalid_choices(self):
         link = self._create_plugin(plugin_type="LinkPlugin")
-        link_row = json.loads(export_plugin(link))[0]
+        link_row = json.loads(export_plugin(link))["plugins"][0]
         choice = {**link_row, "data": {**link_row["data"], "link_target": "invalid-choice"}}
         missing = {**self.rows[0], "plugin_type": "ArticlePlugin", "data": {"sections": []}}
         oversized = {**missing, "data": {"title": "x" * 51, "sections": []}}
@@ -121,8 +121,8 @@ class ImportValidationTests(FunctionalityBaseTestCase):
         section = Section.objects.create(name="Existing")
         foreign = self._create_plugin(plugin_type="RandomPlugin", title="Article", section=section)
         many = self._create_plugin(plugin_type="ArticlePlugin", title="Article")
-        foreign_row = json.loads(export_plugin(foreign))[0]
-        many_row = json.loads(export_plugin(many))[0]
+        foreign_row = json.loads(export_plugin(foreign))["plugins"][0]
+        many_row = json.loads(export_plugin(many))["plugins"][0]
         foreign_row["data"]["section"] = section.pk + 10000
         many_row["data"]["sections"] = [section.pk + 10000]
         invalid_foreign = deepcopy(foreign_row)
@@ -145,7 +145,7 @@ class ImportValidationTests(FunctionalityBaseTestCase):
         original = Section.objects.create(name="Original")
         replacement = Section.objects.create(name="Validated")
         plugin = self._create_plugin(plugin_type="RandomPlugin", title="Article", section=original)
-        rows = json.loads(export_plugin(plugin))
+        rows = json.loads(export_plugin(plugin))["plugins"]
 
         def clean(instance):
             instance.section = replacement

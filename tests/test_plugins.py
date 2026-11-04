@@ -210,7 +210,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 admin_reverse("cms_export_plugins") + f"?language=en&plugin={text_plugin.pk}"
             )
             self.assertEqual(response.status_code, 200)
-            exported_data = json.loads(response.content)
+            exported_data = json.loads(response.content)["plugins"]
             # exported content should be TextPlugin and its child (LinkPlugin).
             self.assertEqual(len(exported_data), 2)
             self.assertEqual(list(map(lambda i: i["plugin_type"], exported_data)), ["TextPlugin", "LinkPlugin"])
@@ -227,7 +227,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 admin_reverse("cms_export_plugins") + f"?language=en&placeholder={placeholder.pk}"
             )
             self.assertEqual(response.status_code, 200)
-            exported_data = json.loads(response.content)
+            exported_data = json.loads(response.content)["plugins"]
             self.assertEqual(len(exported_data), 3)
             self.assertEqual(list(map(lambda i: i["plugin_type"], exported_data)), ["TextPlugin", "LinkPlugin", "PluginImporter"])
 
@@ -237,6 +237,6 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 admin_reverse("cms_export_plugins") + f"?language=en&cms_pagecontent={self.page_content.pk}"
             )
             self.assertEqual(response.status_code, 200)
-            exported_data = json.loads(response.content)
+            exported_data = json.loads(response.content)["placeholders"]
             self.assertEqual(exported_data[0]["placeholder"], "content")
             self.assertEqual(len(exported_data[0]["plugins"]), 0)

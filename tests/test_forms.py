@@ -123,7 +123,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             form = PluginExportForm(data=data)
             form.clean()
             actual = json.loads(form.run_export())
-            self.assertEqual(self._get_expected_plugin_export_data(), actual)
+            self.assertEqual(self._get_expected_plugin_export_data(), actual["plugins"])
 
         with self.subTest("export placeholder"):
             data["placeholder"] = placeholder
@@ -131,7 +131,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             form = PluginExportForm(data=data)
             form.clean()
             actual = json.loads(form.run_export())
-            self.assertEqual(self._get_expected_placeholder_export_data(), actual)
+            self.assertEqual(self._get_expected_placeholder_export_data(), actual["plugins"])
 
         with self.subTest("export page"):
             data["cms_pagecontent"] = self.page_content
@@ -139,7 +139,7 @@ class PluginExportFormTest(FunctionalityBaseTestCase):
             form = PluginExportForm(data=data)
             form.clean()
             actual = json.loads(form.run_export())
-            self.assertEqual(self._get_expected_page_export_data(), actual)
+            self.assertEqual(self._get_expected_page_export_data(), actual["placeholders"])
 
 
 class PluginImportFormTest(FunctionalityBaseTestCase):

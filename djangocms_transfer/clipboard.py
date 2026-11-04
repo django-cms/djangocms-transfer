@@ -19,7 +19,7 @@ from cms.toolbar.utils import get_toolbar_from_request
 from . import browser_clipboard_enabled
 from .exporter import dump_json, get_placeholder_export_data, get_plugin_export_data
 from .importer import import_plugins
-from .validation import parse_plugins
+from .transfer import parse_transfer, transfer_data
 
 
 try:
@@ -32,18 +32,13 @@ except ImportError:  # django CMS 4.1
 
 
 def parse_clipboard(payload, user):
-    if not isinstance(payload, dict) or payload.get("format") != "djangocms-transfer" or payload.get("version") != 1:
-        raise ValidationError(_("This is not compatible clipboard content."))
-    kind = payload.get("kind")
-    rows = payload.get("plugins")
-    if kind not in ("plugin", "placeholder") or not isinstance(rows, list) or not rows:
-        raise ValidationError(_("The clipboard must contain plugins."))
-    plugins = parse_plugins(rows, user)
+    kind, plugins = parse_transfer(payload, user)
+    if kind == "page":
+        # A CMS clipboard has one tree, so page slots become one placeholder.
+        plugins = [plugin for placeholder in plugins for plugin in placeholder.plugins]
+        kind = "placeholder"
     if not plugins:
         raise ValidationError(_("The clipboard must contain plugins."))
-    roots = sum(plugin.parent_id is None for plugin in plugins)
-    if kind == "plugin" and roots != 1:
-        raise ValidationError(_("A copied plugin must have one root."))
     return kind, plugins
 
 
@@ -128,9 +123,6 @@ def export_clipboard(request, clipboard):
         plugins = get_plugin_export_data(bound)
     if not any(plugin is not None for plugin in plugins):
         return JsonResponse({"error": _("The copied content contains no transferable plugins.")}, status=400)
-    response = HttpResponse(dump_json({
-        "format": "djangocms-transfer", "version": 1,
-        "kind": kind, "plugins": plugins,
-    }), content_type="application/json")
+    response = HttpResponse(dump_json(transfer_data(kind, plugins)), content_type="application/json")
     response["Cache-Control"] = "no-store"
     return response

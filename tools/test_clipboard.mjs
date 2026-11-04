@@ -388,3 +388,17 @@ test('import and copy errors stay open with the CMS close button', async () => {
     assert.equal(failedCopy.messages[0].error, true);
     assert.equal(failedCopy.messages[0].delay, -1);
 });
+
+
+test('legacy plugin and page lists are submitted for shared server validation', async () => {
+    for (const legacy of [[{plugin_type: 'TextPlugin', data: {body: 'Legacy'}}],
+                          [{placeholder: 'content', plugins: []}]]) {
+        const text = JSON.stringify(legacy);
+        const app = setup({text});
+        await app.click('import');
+        assert.equal(app.requests.length, 1);
+        assert.equal(await app.requests[0].body.get('clipboard').text(), text);
+        assert.equal(app.changes[0].action, 'COPY');
+        assert.equal(app.reloads, 0);
+    }
+});

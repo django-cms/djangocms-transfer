@@ -168,7 +168,7 @@
                 } catch {
                     throw new Error('The browser clipboard does not contain valid transfer JSON.');
                 }
-                if (payload?.format !== 'djangocms-transfer' || payload.version !== 1) {
+                if (!Array.isArray(payload) && (payload?.format !== 'djangocms-transfer' || payload.version !== 1)) {
                     throw new Error('The browser clipboard does not contain valid transfer JSON.');
                 }
                 const upload = new FormData();

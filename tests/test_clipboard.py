@@ -29,7 +29,7 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
         self.plugin = self._create_plugin()
         self.payload = {
             "format": "djangocms-transfer", "version": 1,
-            "kind": "plugin", "plugins": json.loads(export_plugin(self.plugin)),
+            "kind": "plugin", "plugins": json.loads(export_plugin(self.plugin))["plugins"],
         }
 
     def post(self, *args):
@@ -41,7 +41,7 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
 
     def test_import_export_plugin_tree(self):
         self._create_plugin(parent=self.plugin)
-        self.payload["plugins"] = json.loads(export_plugin(self.plugin))
+        self.payload["plugins"] = json.loads(export_plugin(self.plugin))["plugins"]
         with self.login_user_context(self.user):
             response = self.post()
             self.assertEqual(response.status_code, 200)
@@ -258,7 +258,7 @@ class ConcurrentBrowserClipboardTests(TransactionTestCase):
         plugin = add_plugin(source, "TextPlugin", "en", body="first import")
         payload = {
             "format": "djangocms-transfer", "version": 1, "kind": "plugin",
-            "plugins": json.loads(export_plugin(plugin)),
+            "plugins": json.loads(export_plugin(plugin))["plugins"],
         }
         first_import_started = Event()
         second_lock_attempted = Event()

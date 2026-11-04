@@ -52,6 +52,28 @@ and select your desired choice.
 To export/import a plugin, Open the "*Structure board*", click on the
 dropdown menu for the specific plugin and select your choice.
 
+Transfer format
+---------------
+
+File and browser clipboard exports use the same versioned JSON object::
+
+    {"format": "djangocms-transfer", "version": 1, "kind": "plugin", "plugins": [...]}
+
+``kind`` is ``plugin``, ``placeholder``, or ``page``. Page exports contain
+``placeholders`` instead of ``plugins``; each entry has ``placeholder`` (the slot
+name) and ``plugins``. File imports into a page preserve these slot names.
+Page exports imported into the browser clipboard combine all slots into a single
+clipboard placeholder, ready for the normal Paste action.
+
+Both import paths also recognize legacy JSON lists. Lists of plugin records are
+treated as a plugin tree when there is one root, or as a placeholder otherwise;
+a legacy single-root placeholder cannot be distinguished from a plugin export.
+Lists of ``{"placeholder": ..., "plugins": [...]}`` records are treated as page
+exports. Export-hook ``null`` plugin rows are skipped. Mixed or malformed records
+are rejected, and an unsupported explicit format/version never falls back to
+legacy detection. Empty legacy lists are accepted as empty placeholder file
+imports; empty content cannot replace the browser clipboard.
+
 Browser clipboard
 -----------------
 

@@ -8,20 +8,9 @@ from django.utils.translation import gettext_lazy as _
 
 from cms.models import CMSPlugin, PageContent, Placeholder
 
-from .datastructures import ArchivedPlaceholder
 from .exporter import export_page, export_placeholder, export_plugin
 from .importer import import_plugins, import_plugins_to_page
-from .validation import parse_plugins
-
-
-def _get_parsed_data(file_obj):
-    raw = file_obj.read().decode("utf-8")
-    data = json.loads(raw)
-    if isinstance(data, list):
-        return [ArchivedPlaceholder(item["placeholder"], item["plugins"])
-                if isinstance(item, dict) and set(item) == {"placeholder", "plugins"} else item
-                for item in data]
-    return data
+from .transfer import parse_transfer
 
 
 class ExportImportForm(forms.Form):
@@ -144,20 +133,14 @@ class PluginImportForm(ExportImportForm):
         import_file = self.cleaned_data["import_file"]
 
         try:
-            data = _get_parsed_data(import_file)
+            payload = json.loads(import_file.read().decode("utf-8"))
         except (ValueError, TypeError):
             raise ValidationError("File is not valid")
 
-        if not isinstance(data, list):
-            raise ValidationError("Incorrect json format used.")
+        kind, data = parse_transfer(payload, getattr(self.request, "user", None))
         page_import = bool(self.cleaned_data["cms_pagecontent"])
-        user = getattr(self.request, "user", None)
-        if page_import:
-            if not all(isinstance(item, ArchivedPlaceholder) for item in data):
-                raise ValidationError("Incorrect json format used.")
-            data = [item._replace(plugins=parse_plugins(item.plugins, user)) for item in data]
-        else:
-            data = parse_plugins(data, user)
+        if page_import != (kind == "page") and not (page_import and payload == []):
+            raise ValidationError("Incorrect json format used.")
 
         self.cleaned_data["import_data"] = data
         return self.cleaned_data

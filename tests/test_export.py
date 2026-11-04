@@ -15,26 +15,28 @@ class ExportTest(FunctionalityBaseTestCase):
 
         actual = json.loads(export_plugin(plugin))
 
-        self.assertEqual(self._get_expected_plugin_export_data(), actual)
+        self.assertEqual({"format": "djangocms-transfer", "version": 1, "kind": "plugin",
+                          "plugins": self._get_expected_plugin_export_data()}, actual)
 
     def test_export_placeholder(self):
         placeholder = self.page_content.get_placeholders().get(slot="content")
 
         with self.subTest("empty placeholder"):
             actual = json.loads(export_placeholder(placeholder, "en"))
-            self.assertEqual([], actual)
+            self.assertEqual({"format": "djangocms-transfer", "version": 1, "kind": "placeholder", "plugins": []}, actual)
 
         with self.subTest("placeholder with plugin"):
             self._create_plugin()
             actual = json.loads(export_placeholder(placeholder, "en"))
-            self.assertEqual(self._get_expected_placeholder_export_data(), actual)
+            self.assertEqual(self._get_expected_placeholder_export_data(), actual["plugins"])
 
     def test_export_page(self):
         with self.subTest("empty page"):
             actual = json.loads(export_page(self.page_content, "en"))
-            self.assertEqual([{"placeholder": "content", "plugins": []}], actual)
+            self.assertEqual({"format": "djangocms-transfer", "version": 1, "kind": "page",
+                              "placeholders": [{"placeholder": "content", "plugins": []}]}, actual)
 
         with self.subTest("page with plugin"):
             self._create_plugin()
             actual = json.loads(export_page(self.page_content, "en"))
-            self.assertEqual(self._get_expected_page_export_data(), actual)
+            self.assertEqual(self._get_expected_page_export_data(), actual["placeholders"])
