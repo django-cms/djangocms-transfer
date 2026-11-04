@@ -16,7 +16,11 @@
         const escape = text => text.replace(/[&<>"']/g, character => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[character]);
-        const message = (text, error = false) => cms.API.Messages.open({message: escape(translate(text)), error});
+        const message = (text, error = false) => cms.API.Messages.open({
+            message: escape(translate(text)), error,
+            // CMS uses a negative delay to keep the close button visible.
+            ...(error ? {delay: -1} : {})
+        });
         let importing = false;
         let pendingCopy = null;
         let activeExport = null;

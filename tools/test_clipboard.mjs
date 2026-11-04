@@ -373,3 +373,18 @@ test('a newer copy in another tab supersedes this tab slow export without errors
     assert.equal(app.writes.length, 0);
     assert.equal(app.messages.length, 0);
 });
+
+
+test('import and copy errors stay open with the CMS close button', async () => {
+    const invalid = setup({text: 'not JSON'});
+    await invalid.click('import');
+    assert.equal(invalid.messages[0].error, true);
+    assert.equal(invalid.messages[0].delay, -1);
+
+    const failedCopy = setup({ok: false, status: 500});
+    failedCopy.copy();
+    failedCopy.success();
+    await flush();
+    assert.equal(failedCopy.messages[0].error, true);
+    assert.equal(failedCopy.messages[0].delay, -1);
+});
