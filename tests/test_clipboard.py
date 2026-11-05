@@ -239,11 +239,16 @@ class BrowserClipboardTests(FunctionalityBaseTestCase):
             self.assertEqual(response.status_code, 400)
             self.assertEqual(CMSPlugin.objects.count(), count)
 
+    @override_settings(DJANGOCMS_TRANSFER_MODE="clipboard-only")
+    def test_clipboard_only_mode_allows_import(self):
+        with self.login_user_context(self.user):
+            self.assertEqual(self.post().status_code, 200)
+
     def test_setting_disables_import_and_export(self):
         with self.login_user_context(self.user):
             clipboard = self.post().wsgi_request.toolbar.clipboard
             original_ids = list(clipboard.get_plugins().values_list("pk", flat=True))
-            with override_settings(DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD=False):
+            with override_settings(DJANGOCMS_TRANSFER_MODE="files-only"):
                 self.assertEqual(self.post().status_code, 404)
                 self.assertEqual(self.client.get(admin_reverse("cms_transfer_clipboard")).status_code, 404)
             self.assertEqual(list(clipboard.get_plugins().values_list("pk", flat=True)), original_ids)

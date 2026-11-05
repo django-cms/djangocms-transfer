@@ -3,7 +3,13 @@ __version__ = "2.1.0"
 def browser_clipboard_enabled():
     from django.conf import settings
 
-    return getattr(settings, "DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD", True)
+    return getattr(settings, "DJANGOCMS_TRANSFER_MODE", "all") in {"all", "clipboard-only"}
+
+
+def file_transfer_enabled():
+    from django.conf import settings
+
+    return getattr(settings, "DJANGOCMS_TRANSFER_MODE", "all") in {"all", "files-only"}
 
 
 def get_serializer_name(default="python"):

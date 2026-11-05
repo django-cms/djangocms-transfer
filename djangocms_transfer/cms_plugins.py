@@ -16,6 +16,7 @@ from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
+from . import file_transfer_enabled
 from .clipboard import clipboard_view
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
 
@@ -42,6 +43,9 @@ class PluginImporter(CMSPluginBase):
 
     @staticmethod
     def _get_extra_menu_items(query_params, request):
+        if not file_transfer_enabled():
+            return []
+
         data = urlencode({
             "language": get_language_from_request(request),
             **query_params

@@ -2,6 +2,7 @@ import json
 
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 
 from cms.constants import REFRESH_PAGE
 from cms.plugin_pool import plugin_pool
@@ -64,6 +65,20 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 menu_items[1].url,
                 "/en/admin/cms/page/plugin/plugin_importer/import-plugins/?language=en&placeholder=1"
             )
+
+    def test_transfer_mode_controls_plugin_and_placeholder_menus(self):
+        request = self.get_request()
+        plugin = self._create_plugin()
+        placeholder = self.page_content.get_placeholders().get(slot="content")
+        for mode in ("all", "files-only", "clipboard-only"):
+            with self.subTest(mode=mode), override_settings(DJANGOCMS_TRANSFER_MODE=mode):
+                expected_count = 0 if mode == "clipboard-only" else 2
+                self.assertEqual(
+                    len(self.plugin_importer.get_extra_plugin_menu_items(request, plugin)), expected_count
+                )
+                self.assertEqual(
+                    len(self.plugin_importer.get_extra_placeholder_menu_items(request, placeholder)), expected_count
+                )
 
     def test_import_plugin_views(self):
         with self.login_user_context(self.user):

@@ -9,7 +9,7 @@ from .abstract import FunctionalityBaseTestCase
 
 
 class PluginImporterToolbarTestCase(FunctionalityBaseTestCase):
-    @override_settings(DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD=False)
+    @override_settings(DJANGOCMS_TRANSFER_MODE="files-only")
     def test_browser_clipboard_setting_removes_menu_and_script(self):
         with self.login_user_context(self.get_superuser()):
             response = self.client.get(get_object_edit_url(self.page_content))
@@ -17,6 +17,26 @@ class PluginImporterToolbarTestCase(FunctionalityBaseTestCase):
             self.assertNotIn("cms-transfer-clipboard-import", toolbar.render())
             self.assertNotIn("djangocms_transfer/js/clipboard.js", str(toolbar.media))
             self.assertIn("djangocms_transfer/css/transfer.css", str(toolbar.media))
+
+    def test_transfer_mode_controls_page_menu_and_clipboard(self):
+        with self.login_user_context(self.get_superuser()):
+            for mode in ("all", "files-only", "clipboard-only"):
+                with self.subTest(mode=mode), override_settings(DJANGOCMS_TRANSFER_MODE=mode):
+                    response = self.client.get(get_object_edit_url(self.page_content))
+                    toolbar = response.wsgi_request.toolbar
+                    markup = toolbar.render()
+                    page_menu = toolbar.get_menu("page")
+                    file_items = [
+                        item for item in page_menu.items
+                        if getattr(item, "name", "") == "Export"
+                        or getattr(item, "name", "").startswith("Import")
+                    ]
+                    self.assertEqual(len(file_items), 0 if mode == "clipboard-only" else 2)
+                    self.assertEqual("cms-transfer-clipboard-import" in markup, mode != "files-only")
+                    self.assertEqual(
+                        "djangocms_transfer/js/clipboard.js" in str(toolbar.media),
+                        mode != "files-only",
+                    )
 
     def test_browser_clipboard_menu_and_script_in_edit_mode(self):
         with self.login_user_context(self.get_superuser()):

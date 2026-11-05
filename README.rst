@@ -106,11 +106,17 @@ Customization
 
 Following settings are available:
 
-* **DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD** (default: ``True``):
+* **DJANGOCMS_TRANSFER_MODE** (default: ``"all"``):
 
-  Set to ``False`` to disable browser clipboard copying and importing, including
-  its toolbar menu item and endpoint. Normal django CMS copy/paste and file
-  export/import remain available.
+  * ``"all"`` enables file export/import and browser clipboard support.
+  * ``"files-only"`` disables browser clipboard copying and importing, including
+    its toolbar menu item and endpoint. File export/import remains available.
+  * ``"clipboard-only"`` enables browser clipboard support and removes file
+    import/export menus for pages, placeholders, and plugins.
+
+  Normal django CMS copy/paste remains available in all modes. This setting
+  replaces ``DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD``; replace the former value
+  ``False`` with ``DJANGOCMS_TRANSFER_MODE = "files-only"``.
 
 * **DJANGOCMS_TRANSFER_MAX_CLIPBOARD_SIZE** (default: ``20971520``, 20 MiB):
 

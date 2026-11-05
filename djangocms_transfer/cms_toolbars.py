@@ -10,7 +10,7 @@ from cms.toolbar_pool import toolbar_pool
 from cms.utils.page_permissions import user_can_change_page
 from cms.utils.urlutils import admin_reverse
 
-from . import browser_clipboard_enabled
+from . import browser_clipboard_enabled, file_transfer_enabled
 
 
 @toolbar_pool.register
@@ -36,6 +36,9 @@ class PluginImporter(CMSToolbar):
             )
 
     def populate(self):
+        if not file_transfer_enabled():
+            return
+
         # always use draft if we have a page
         page = getattr(self.request, "current_page", None)
         if not page:
