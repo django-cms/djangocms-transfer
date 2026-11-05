@@ -1,19 +1,44 @@
+from django.forms import Media
 from django.utils.http import urlencode
 from django.utils.translation import gettext
 
+from cms.constants import REFRESH_PAGE
 from cms.models import PageContent
+from cms.toolbar.items import LinkItem
 from cms.toolbar_base import CMSToolbar
 from cms.toolbar_pool import toolbar_pool
 from cms.utils.page_permissions import user_can_change_page
 from cms.utils.urlutils import admin_reverse
 
+from . import browser_clipboard_enabled, file_transfer_enabled
+
 
 @toolbar_pool.register
 class PluginImporter(CMSToolbar):
-    class Media:
-        css = {"all": ("djangocms_transfer/css/transfer.css",)}
+    @property
+    def media(self):
+        return super().media + Media(
+            css={"all": ("djangocms_transfer/css/transfer.css",)},
+            js=("djangocms_transfer/js/clipboard.js",) if browser_clipboard_enabled() else (),
+        )
+
+    def post_template_populate(self):
+        menu = self.toolbar.get_menu("admin-menu")
+        if menu and self.toolbar.edit_mode_active and browser_clipboard_enabled():
+            clipboard_item = menu.find_first(LinkItem, extra_classes=["cms-clipboard-trigger"])
+            if clipboard_item is None:
+                return
+            menu.add_link_item(
+                gettext("Import clipboard from browser…"),
+                url=admin_reverse("cms_transfer_clipboard"),
+                extra_classes=["cms-transfer-clipboard-import"],
+                position=clipboard_item + 1,
+            )
 
     def populate(self):
+        if not file_transfer_enabled():
+            return
+
         # always use draft if we have a page
         page = getattr(self.request, "current_page", None)
         if not page:
@@ -52,5 +77,5 @@ class PluginImporter(CMSToolbar):
             gettext("Import"),
             url=admin_reverse("cms_import_plugins") + "?" + data,
             disabled=not_edit_mode,
-            on_close=getattr(self.toolbar, "request_path", self.request.path),
+            on_close=REFRESH_PAGE,
         )

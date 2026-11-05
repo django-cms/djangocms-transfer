@@ -40,9 +40,7 @@ For a manual install:
 Version Compatibility
 ---------------------
 
-For django CMS 4.0 or later, you must use djangocms-transfer 2.0 or later.
-
-For django CMS 3.7 through 3.11 use versions 1.x of djangocms-transfer.
+This version supports django CMS 4.1 and later.
 
 
 How to Use
@@ -54,11 +52,79 @@ and select your desired choice.
 To export/import a plugin, Open the "*Structure board*", click on the
 dropdown menu for the specific plugin and select your choice.
 
+Transfer format
+---------------
+
+File and browser clipboard exports use the same versioned JSON object::
+
+    {"format": "djangocms-transfer", "version": 1, "kind": "plugin", "plugins": [...]}
+
+``kind`` is ``plugin``, ``placeholder``, or ``page``. Page exports contain
+``placeholders`` instead of ``plugins``; each entry has ``placeholder`` (the slot
+name) and ``plugins``. File imports into a page preserve these slot names.
+Page exports imported into the browser clipboard combine all slots into a single
+clipboard placeholder, ready for the normal Paste action.
+
+Both import paths also recognize legacy JSON lists. Lists of plugin records are
+treated as a plugin tree when there is one root, or as a placeholder otherwise;
+a legacy single-root placeholder cannot be distinguished from a plugin export.
+Lists of ``{"placeholder": ..., "plugins": [...]}`` records are treated as page
+exports. Export-hook ``null`` plugin rows are skipped. Mixed or malformed records
+are rejected, and an unsupported explicit format/version never falls back to
+legacy detection. Empty legacy lists are accepted as empty placeholder file
+imports; empty content cannot replace the browser clipboard.
+
+Browser clipboard
+-----------------
+
+In edit mode, copying or cutting a plugin (including its children), or copying a whole placeholder,
+also writes its transfer JSON to the browser clipboard. To transfer it to another
+instance, open that instance's administration menu in the toolbar and choose
+"Import clipboard from browser…". This replaces your django CMS clipboard;
+use the normal Paste action to insert the content wherever it is allowed.
+
+Clipboard content is validated on import, including installed plugin types and
+your permission to add them. Invalid content leaves your CMS clipboard unchanged.
+File and clipboard imports both call the plugin model's ``full_clean()`` before
+saving. Validation and normalization of plugin data, including JSON configuration,
+belong in model fields, their validators, or ``Model.clean()``. Plugin editing
+forms are not used during import. CMS identity and tree fields are supplied by
+the destination and excluded from field validation.
+Rich-text sanitization follows the plugin's own save behavior, just as when
+editing that plugin normally; this package does not impose a separate HTML policy.
+Export-hook ``None`` rows are skipped by both import paths.
+Both instances need django CMS Transfer installed. Related objects and media
+have the same limitations as file export/import.
+
+Browser clipboard access requires HTTPS (or localhost) and browser permission.
+If the browser clipboard cannot be updated, the normal CMS copy still succeeds
+and a message explains that browser copying failed.
+
 
 Customization
 -------------
 
 Following settings are available:
+
+* **DJANGOCMS_TRANSFER_MODE** (default: ``"all"``):
+
+  * ``"all"`` enables file export/import and browser clipboard support.
+  * ``"files-only"`` disables browser clipboard copying and importing, including
+    its toolbar menu item and endpoint. File export/import remains available.
+  * ``"clipboard-only"`` enables browser clipboard support and removes file
+    import/export menus for pages, placeholders, and plugins.
+
+  Normal django CMS copy/paste remains available in all modes. This setting
+  replaces ``DJANGOCMS_TRANSFER_BROWSER_CLIPBOARD``; replace the former value
+  ``False`` with ``DJANGOCMS_TRANSFER_MODE = "files-only"``.
+
+* **DJANGOCMS_TRANSFER_MAX_CLIPBOARD_SIZE** (default: ``20971520``, 20 MiB):
+
+  Maximum size of a browser clipboard upload in bytes; ``None`` disables this
+  limit. Browser imports use multipart file uploads, so they can exceed Django's
+  ``DATA_UPLOAD_MAX_MEMORY_SIZE`` JSON-body limit. Oversized uploads report an
+  error and preserve the CMS clipboard. File import remains available for larger
+  transfers, subject to the site's web-server limits.
 
 * **DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA**:
 

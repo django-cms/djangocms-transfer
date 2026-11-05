@@ -2,7 +2,9 @@ import json
 
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 
+from cms.constants import REFRESH_PAGE
 from cms.plugin_pool import plugin_pool
 from cms.utils.urlutils import admin_reverse
 
@@ -24,9 +26,10 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
 
     def test_get_plugin_urls(self):
         urlpatterns = self.plugin_importer().get_plugin_urls()
-        self.assertEqual(len(urlpatterns), 2)
-        self.assertEqual(urlpatterns[0].name, "cms_export_plugins")
-        self.assertEqual(urlpatterns[1].name, "cms_import_plugins")
+        self.assertEqual(
+            [pattern.name for pattern in urlpatterns],
+            ["cms_transfer_clipboard", "cms_export_plugins", "cms_import_plugins"],
+        )
 
     def test_get_extra_menu_items(self):
         request = self.get_request()
@@ -38,6 +41,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             self.assertEqual(len(menu_items), 2)
             self.assertEqual(menu_items[0].name, "Export plugins")
             self.assertEqual(menu_items[1].name, "Import plugins")
+            self.assertEqual(menu_items[1].attributes["on-close"], REFRESH_PAGE)
             self.assertEqual(
                 menu_items[0].url,
                 "/en/admin/cms/page/plugin/plugin_importer/export-plugins/?language=en&plugin=1"
@@ -52,6 +56,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
         with self.subTest("extra placeholder menu items"):
             placeholder = self.page_content.get_placeholders().get(slot="content")
             menu_items = self.plugin_importer.get_extra_placeholder_menu_items(request, placeholder)
+            self.assertEqual(menu_items[1].attributes["on-close"], REFRESH_PAGE)
             self.assertEqual(
                 menu_items[0].url,
                 "/en/admin/cms/page/plugin/plugin_importer/export-plugins/?language=en&placeholder=1"
@@ -60,6 +65,20 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 menu_items[1].url,
                 "/en/admin/cms/page/plugin/plugin_importer/import-plugins/?language=en&placeholder=1"
             )
+
+    def test_transfer_mode_controls_plugin_and_placeholder_menus(self):
+        request = self.get_request()
+        plugin = self._create_plugin()
+        placeholder = self.page_content.get_placeholders().get(slot="content")
+        for mode in ("all", "files-only", "clipboard-only"):
+            with self.subTest(mode=mode), override_settings(DJANGOCMS_TRANSFER_MODE=mode):
+                expected_count = 0 if mode == "clipboard-only" else 2
+                self.assertEqual(
+                    len(self.plugin_importer.get_extra_plugin_menu_items(request, plugin)), expected_count
+                )
+                self.assertEqual(
+                    len(self.plugin_importer.get_extra_placeholder_menu_items(request, placeholder)), expected_count
+                )
 
     def test_import_plugin_views(self):
         with self.login_user_context(self.user):
@@ -109,8 +128,8 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 "language": "en", "placeholder": [placeholder.id],
                 "import_file": SimpleUploadedFile("file.txt", b"[null, null]")
             }
-            with self.assertRaises(IndexError):
-                self.client.post(path=request_path, data=post_data)
+            response = self.client.post(path=request_path, data=post_data)
+            self.assertEqual(response.status_code, 200)
 
             # create plugins in the placeholder
             text_plugin = self._create_plugin()
@@ -125,12 +144,11 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             }
             response = self.client.post(path=request_path, data=post_data)
             self.assertIn(b'<div class="success"></div>', response.content)
-            self.assertEqual(response.context[2].template_name, "djangocms_transfer/placeholder_close_frame.html")
+            self.assertTemplateUsed(response, "djangocms_transfer/placeholder_close_frame.html")
 
-            structure_data = json.loads(response.context["structure_data"])
-            # Since the import file is empty, only child plugins gets
-            # passed to the frontend data bridge
-            self.assertEqual(len(structure_data["plugins"]), 1)
+            self.assertNotIn("structure_data", response.context)
+            self.assertContains(response, 'class="cms-close-frame"')
+            self.assertNotContains(response, "<script")
 
             # POST placeholder import: simple data
             post_data["import_file"] = SimpleUploadedFile(
@@ -140,9 +158,9 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
             response = self.client.post(path=request_path, data=post_data)
             self.assertIn(b'<div class="success"></div>', response.content)
 
-            structure_data = json.loads(response.context["structure_data"])
-            # newly imported plugin and child plugin gets passed to the frontend data bridge
-            self.assertEqual(len(structure_data["plugins"]), 2)
+            self.assertNotIn("structure_data", response.context)
+            self.assertNotContains(response, "<script")
+            self.assertEqual(placeholder.get_plugins("en").count(), 4)
 
     def test_import_plugin_views_for_plugin(self):
         # create plugins
@@ -164,8 +182,8 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 "language": "en", "plugin": [text_plugin.id],
                 "import_file": SimpleUploadedFile("file.txt", b"[null, null]")
             }
-            with self.assertRaises(IndexError):
-                self.client.post(path=request_path, data=post_data)
+            response = self.client.post(path=request_path, data=post_data)
+            self.assertEqual(response.status_code, 200)
 
             # plugin import on TextPlugin
             post_data["import_file"] = SimpleUploadedFile(
@@ -207,7 +225,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 admin_reverse("cms_export_plugins") + f"?language=en&plugin={text_plugin.pk}"
             )
             self.assertEqual(response.status_code, 200)
-            exported_data = json.loads(response.content)
+            exported_data = json.loads(response.content)["plugins"]
             # exported content should be TextPlugin and its child (LinkPlugin).
             self.assertEqual(len(exported_data), 2)
             self.assertEqual(list(map(lambda i: i["plugin_type"], exported_data)), ["TextPlugin", "LinkPlugin"])
@@ -224,7 +242,7 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 admin_reverse("cms_export_plugins") + f"?language=en&placeholder={placeholder.pk}"
             )
             self.assertEqual(response.status_code, 200)
-            exported_data = json.loads(response.content)
+            exported_data = json.loads(response.content)["plugins"]
             self.assertEqual(len(exported_data), 3)
             self.assertEqual(list(map(lambda i: i["plugin_type"], exported_data)), ["TextPlugin", "LinkPlugin", "PluginImporter"])
 
@@ -234,6 +252,6 @@ class PluginImporterTestCase(FunctionalityBaseTestCase):
                 admin_reverse("cms_export_plugins") + f"?language=en&cms_pagecontent={self.page_content.pk}"
             )
             self.assertEqual(response.status_code, 200)
-            exported_data = json.loads(response.content)
+            exported_data = json.loads(response.content)["placeholders"]
             self.assertEqual(exported_data[0]["placeholder"], "content")
             self.assertEqual(len(exported_data[0]["plugins"]), 0)

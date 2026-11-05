@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "cms",
     "menus",
     "treebeard",
+    "sekizai",
     "djangocms_text",
     "djangocms_link",
     "djangocms_transfer",
@@ -42,6 +43,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "sekizai.context_processors.sekizai",
             ],
         },
     },
@@ -70,6 +72,17 @@ DATABASES = {
         },
     }
 }
+
+if os.environ.get("DJANGOCMS_TRANSFER_TEST_POSTGRES"):
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "postgres",
+        "USER": os.environ.get("PGUSER", "postgres"),
+        "PASSWORD": os.environ.get("PGPASSWORD", ""),
+        "HOST": os.environ.get("PGHOST", "localhost"),
+        "PORT": os.environ.get("PGPORT", "5432"),
+        "TEST": {"MIGRATE": False, "CHARSET": "UTF8", "TEMPLATE": "template0"},
+    }
 
 CMS_CONFIRM_VERSION4 = True
 
