@@ -8,29 +8,9 @@ from django.utils.translation import gettext_lazy as _
 
 from cms.models import CMSPlugin, PageContent, Placeholder
 
-from .datastructures import ArchivedPlaceholder, ArchivedPlugin
 from .exporter import export_page, export_placeholder, export_plugin
 from .importer import import_plugins, import_plugins_to_page
-
-
-def _object_version_data_hook(data, for_page=False):
-    if not data:
-        return data
-
-    if "plugins" in data:
-        return ArchivedPlaceholder(
-            slot=data["placeholder"],
-            plugins=data["plugins"],
-        )
-
-    if "plugin_type" in data:
-        return ArchivedPlugin(**data)
-    return data
-
-
-def _get_parsed_data(file_obj, for_page=False):
-    raw = file_obj.read().decode("utf-8")
-    return json.loads(raw, object_hook=_object_version_data_hook)
+from .transfer import parse_transfer
 
 
 class ExportImportForm(forms.Form):
@@ -103,19 +83,23 @@ class PluginExportForm(ExportImportForm):
         placeholder = data["placeholder"]
 
         if cms_pagecontent:
-            return "{}.json".format(cms_pagecontent.page.get_slug(language=language))
-        elif placeholder and placeholder.page is not None:
-            return "{}_{}.json".format(
-                placeholder.page.get_slug(language=language),
-                slugify(placeholder.slot),
-            )
-        elif plugin is not None and plugin.page is not None:
-            return "{}_{}.json".format(
-                plugin.page.get_slug(language=language),
-                slugify(plugin.get_short_description()),
-            )
+            page = cms_pagecontent.page
+            suffix = ""
+        elif placeholder or plugin:
+            source_placeholder = placeholder or plugin.placeholder
+            page = source_placeholder.page
+            cms_pagecontent = source_placeholder.source
+            suffix = slugify(placeholder.slot if placeholder else plugin.get_short_description())
         else:
             return "plugins.json"
+
+        if page is None:
+            return "plugins.json"
+        # Draft slugs belong to PageContent on newer CMS versions and may not
+        # have a routable PageUrl yet. CMS 4.1 stores slugs on PageUrl only.
+        slug = getattr(cms_pagecontent, "slug", None) if isinstance(cms_pagecontent, PageContent) else None
+        slug = slug or page.get_slug(language=language) or f"page-{page.pk}"
+        return f"{slug}_{suffix}.json" if suffix else f"{slug}.json"
 
     def run_export(self):
         data = self.cleaned_data
@@ -132,28 +116,30 @@ class PluginExportForm(ExportImportForm):
 
 
 class PluginImportForm(ExportImportForm):
+    def __init__(self, *args, request=None, **kwargs):
+        self.request = request
+        super().__init__(*args, **kwargs)
+
     import_file = forms.FileField(
         required=True,
         widget=forms.FileInput(attrs={"accept": "application/json"}),
     )
 
     def clean(self):
+        super().clean()
         if self.errors:
             return self.cleaned_data
 
         import_file = self.cleaned_data["import_file"]
 
         try:
-            data = _get_parsed_data(import_file)
+            payload = json.loads(import_file.read().decode("utf-8"))
         except (ValueError, TypeError):
             raise ValidationError("File is not valid")
 
-        first_item = data[0]
-        is_placeholder = isinstance(first_item, ArchivedPlaceholder)
+        kind, data = parse_transfer(payload, getattr(self.request, "user", None))
         page_import = bool(self.cleaned_data["cms_pagecontent"])
-        plugins_import = not page_import
-
-        if (is_placeholder and plugins_import) or (page_import and not is_placeholder):
+        if page_import != (kind == "page") and not (page_import and payload == []):
             raise ValidationError("Incorrect json format used.")
 
         self.cleaned_data["import_data"] = data
@@ -177,6 +163,7 @@ class PluginImportForm(ExportImportForm):
                 placeholders=data["import_data"],
                 pagecontent=target_page,
                 language=language,
+                request=self.request,
             )
         else:
             import_plugins(
@@ -184,4 +171,5 @@ class PluginImportForm(ExportImportForm):
                 placeholder=target_placeholder,
                 language=language,
                 root_plugin_id=target_plugin_id,
+                request=self.request,
             )

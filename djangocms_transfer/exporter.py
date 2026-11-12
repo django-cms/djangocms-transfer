@@ -7,6 +7,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from cms.utils.plugins import get_bound_plugins
 
 from . import custom_process_hook, get_serializer_name
+from .transfer import transfer_data
 from .utils import get_plugin_fields
 
 
@@ -42,23 +43,24 @@ def get_plugin_data(plugin, only_meta=False):
 
 def export_plugin(plugin):
     data = get_plugin_export_data(plugin)
-    return dump_json(data)
+    return dump_json(transfer_data("plugin", data))
 
 
 def export_placeholder(placeholder, language):
     data = get_placeholder_export_data(placeholder, language)
-    return dump_json(data)
+    return dump_json(transfer_data("placeholder", data))
 
 
 def export_page(cms_pagecontent, language):
     data = get_page_export_data(cms_pagecontent, language)
-    return dump_json(data)
+    return dump_json(transfer_data("page", data))
 
 
 def get_plugin_export_data(plugin):
     descendants = plugin.get_descendants()
     plugin_data = [get_plugin_data(plugin=plugin)]
-    plugin_data[0]["parent_id"] = None
+    if plugin_data[0] is not None:
+        plugin_data[0]["parent_id"] = None
     plugin_data.extend(
         get_plugin_data(plugin) for plugin in get_bound_plugins(descendants)
     )

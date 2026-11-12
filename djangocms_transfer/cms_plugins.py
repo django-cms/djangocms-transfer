@@ -1,31 +1,24 @@
-import json
+import logging
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import DataError, IntegrityError
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import re_path, reverse
+from django.utils.decorators import method_decorator
 from django.utils.http import urlencode
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.csrf import csrf_protect
 
+from cms.constants import REFRESH_PAGE
 from cms.plugin_base import CMSPluginBase, PluginMenuItem
 from cms.plugin_pool import plugin_pool
 from cms.utils import get_language_from_request
 from cms.utils.urlutils import admin_reverse
 
+from . import file_transfer_enabled
+from .clipboard import clipboard_view
 from .forms import ExportImportForm, PluginExportForm, PluginImportForm
-
-
-try:
-    from cms.toolbar.utils import get_plugin_tree
-except ImportError:
-    # django CMS 4.1 still uses the legacy data bridge
-    # This method serves as a compatibility shim
-    from cms.toolbar.utils import get_plugin_tree_as_json
-
-    def get_plugin_tree(request, plugins):
-        json_str = get_plugin_tree_as_json(request, plugins)
-        return json.loads(json_str)
-
 
 
 class PluginImporter(CMSPluginBase):
@@ -34,6 +27,7 @@ class PluginImporter(CMSPluginBase):
 
     def get_plugin_urls(self):
         urlpatterns = [
+            re_path(r"^browser-clipboard/$", clipboard_view, name="cms_transfer_clipboard"),
             re_path(
                 r"^export-plugins/$",
                 self.export_plugins_view,
@@ -49,6 +43,9 @@ class PluginImporter(CMSPluginBase):
 
     @staticmethod
     def _get_extra_menu_items(query_params, request):
+        if not file_transfer_enabled():
+            return []
+
         data = urlencode({
             "language": get_language_from_request(request),
             **query_params
@@ -70,6 +67,7 @@ class PluginImporter(CMSPluginBase):
                 action="modal",
                 attributes={
                     "icon": "import",
+                    "on-close": REFRESH_PAGE,
                 },
             ),
         ]
@@ -88,6 +86,7 @@ class PluginImporter(CMSPluginBase):
         return cls._get_extra_menu_items(data, request)
 
     @classmethod
+    @method_decorator(csrf_protect)
     def import_plugins_view(cls, request):
         if not request.user.is_staff:
             raise PermissionDenied
@@ -106,9 +105,27 @@ class PluginImporter(CMSPluginBase):
             data=request.POST or None,
             files=request.FILES or None,
             initial=initial_data,
+            request=request,
         )
 
-        if not import_form.is_valid():
+        valid = import_form.is_valid()
+        if valid:
+            try:
+                import_form.run_import()
+            except PermissionDenied:
+                raise
+            except ValidationError as error:
+                import_form.add_error(None, ValidationError(error.messages))
+                valid = False
+            except (DataError, IntegrityError, OverflowError):
+                import_form.add_error(None, _("Plugin values could not be stored."))
+                valid = False
+            except Exception:
+                logging.getLogger(__name__).exception("Plugin file import failed")
+                import_form.add_error(None, _("Plugin import failed. No content was changed."))
+                valid = False
+
+        if not valid:
             opts = cls.model._meta
             context = {
                 "form": import_form,
@@ -121,43 +138,7 @@ class PluginImporter(CMSPluginBase):
             }
             return render(request, "djangocms_transfer/import_plugins.html", context)
 
-        plugin = import_form.cleaned_data.get("plugin")
-        language = import_form.cleaned_data["language"]
-
-        if plugin:
-            root_id = plugin.pk
-            placeholder = plugin.placeholder
-        else:
-            root_id = None
-            placeholder = import_form.cleaned_data.get("placeholder")
-
-        if not placeholder:
-            # Page placeholders/plugins import
-            # TODO: Check permissions
-            import_form.run_import()
-            return HttpResponse(
-                '<div><div class="messagelist"><div class="success"></div></div></div>'
-            )
-
-        tree_order = placeholder.get_plugin_tree_order(language, parent_id=root_id)
-        # TODO: Check permissions
-        import_form.run_import()
-
-        if plugin:
-            new_plugins = plugin.reload().get_descendants().exclude(pk__in=tree_order)
-            return plugin.get_plugin_class_instance().render_close_frame(
-                request, obj=new_plugins[0]
-            )
-
-        # Placeholder plugins import
-        new_plugins = placeholder.get_plugins(language).exclude(pk__in=tree_order)
-        data = get_plugin_tree(request, list(new_plugins))
-        data["plugin_order"] = tree_order + ["__COPY__"]
-        data["target_placeholder_id"] = placeholder.pk
-        context = {"structure_data": json.dumps(data)}
-        return render(
-            request, "djangocms_transfer/placeholder_close_frame.html", context
-        )
+        return render(request, "djangocms_transfer/placeholder_close_frame.html", {})
 
     @classmethod
     def export_plugins_view(cls, request):

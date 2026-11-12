@@ -2,6 +2,21 @@
 Changelog
 =========
 
+2.1.0 (2026-11-12)
+==================
+
+* Add browser clipboard copying and importing of plugin trees and placeholders.
+* Add transfer modes and a configurable browser clipboard upload-size limit.
+* Use a shared versioned JSON format for file and browser transfers, while
+  continuing to accept legacy exports.
+* Validate plugin data, model fields, related objects, and import permissions;
+  roll back failed imports and serialize concurrent clipboard replacements.
+* Reject missing related objects before calling import hooks. Hooks run after
+  validation and saving and can no longer supply fallbacks for missing objects;
+  create or map those objects before importing.
+* Expand compatibility coverage for Django 6.x, django CMS 5.1, and newer Python
+  versions.
+
 2.0.1 (2025-11-10)
 ==================
 

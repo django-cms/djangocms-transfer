@@ -23,7 +23,7 @@ class ImportTest(FunctionalityBaseTestCase):
             Section.objects.create(name="body"),
             Section.objects.create(name="inner-body")
         ])
-        archived_plugin = ArchivedPlugin(**json.loads(export_plugin(plugin))[0])
+        archived_plugin = ArchivedPlugin(**json.loads(export_plugin(plugin))["plugins"][0])
 
         placeholder = self.page_content.placeholders.create(slot="test")
         restored_plugin = archived_plugin.restore(placeholder, "en")
@@ -40,7 +40,7 @@ class ImportTest(FunctionalityBaseTestCase):
         article_data = {"title": "Test",
                         "section": Section.objects.create(name="body")}
         plugin = self._create_plugin(plugin_type="RandomPlugin", **article_data)
-        plugin_data = json.loads(export_plugin(plugin))[0]
+        plugin_data = json.loads(export_plugin(plugin))["plugins"][0]
         archived_plugin = ArchivedPlugin(**plugin_data)
 
         restored_plugin = archived_plugin.restore(placeholder, "en")
@@ -54,7 +54,7 @@ class ImportTest(FunctionalityBaseTestCase):
         article_data = {"title": "Test",
                         "section": Section.objects.create(name="body")}
         plugin = self._create_plugin(plugin_type="RandomPlugin", **article_data)
-        plugin_data = json.loads(export_plugin(plugin))[0]
+        plugin_data = json.loads(export_plugin(plugin))["plugins"][0]
         plugin_data["data"].pop("section") # remove section from the plugin's data
         no_section_archived_plugin = ArchivedPlugin(**plugin_data)
 
@@ -74,12 +74,12 @@ class ImportTest(FunctionalityBaseTestCase):
         plugin.save()
 
         link_plugin_data = ArchivedPlugin(
-            **json.loads(export_plugin(link_plugin))[0]
+            **json.loads(export_plugin(link_plugin))["plugins"][0]
         )
-        plugin_data = ArchivedPlugin(**json.loads(export_plugin(plugin))[0])
+        plugin_data = ArchivedPlugin(**json.loads(export_plugin(plugin))["plugins"][0])
         placeholder_data = ArchivedPlaceholder(
             "content",
-            [ArchivedPlugin(**data) for data in json.loads(export_placeholder(placeholder, "en"))],
+            [ArchivedPlugin(**data) for data in json.loads(export_placeholder(placeholder, "en"))["plugins"]],
         )
 
         with self.subTest("import plugins"):
