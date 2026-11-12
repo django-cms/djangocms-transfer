@@ -301,7 +301,10 @@ class ConcurrentBrowserClipboardTests(TransactionTestCase):
                 close_old_connections()
 
         # Start with an empty clipboard: locking its plugins would not protect it.
-        with patch("djangocms_transfer.clipboard.import_plugins", side_effect=delayed_import):
+        # Response rendering is covered by BrowserClipboardTests. Keep this
+        # test focused on database locking without requiring a full CMS toolbar.
+        with patch("djangocms_transfer.clipboard.import_plugins", side_effect=delayed_import), \
+                patch("djangocms_transfer.clipboard.get_plugin_tree", return_value={}):
             with ThreadPoolExecutor(max_workers=2, thread_name_prefix="clipboard") as executor:
                 first = executor.submit(send_import)
                 try:

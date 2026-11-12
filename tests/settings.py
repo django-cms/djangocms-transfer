@@ -3,6 +3,8 @@ import os
 
 SECRET_KEY = "djangocms-transfer-test"
 
+STATIC_URL = "/static/"
+
 ALLOWED_HOSTS = ["localhost"]
 
 INSTALLED_APPS = [

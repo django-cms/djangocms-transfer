@@ -133,17 +133,23 @@ Following settings are available:
 
 * **DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA**:
 
-  Enables processing of plugin instances prior to saving, e.g.
-  ``myapp.module.function``.
-  For example: set default-values for ForeignKeys (images for django_filer, ..)
+  Enables processing of plugin instances after validation and saving, e.g.
+  ``myapp.module.function``. The hook runs inside the import transaction;
+  save any changes made by the hook explicitly.
+
+  Compatibility change: imports now reject missing related objects before this
+  hook runs. Hooks can no longer repair references to objects absent from the
+  destination site. Create or map related objects before importing, and put
+  validation or normalization needed before saving in model fields or
+  ``Model.clean()``.
 
 As an example the combination of ``_PROCESS_EXPORT_PLUGIN_DATA`` and
 ``_PROCESS_IMPORT_PLUGIN_DATA`` lets you export and import the data between
 different systems while setting the contents as you need it::
 
     # settings.py
-    .._PROCESS_EXPORT_PLUGIN_DATA = "myapp.some.module.export_function"
-    .._PROCESS_IMPORT_PLUGIN_DATA = "myapp.some.module.import_function"
+    DJANGOCMS_TRANSFER_PROCESS_EXPORT_PLUGIN_DATA = "myapp.some.module.export_function"
+    DJANGOCMS_TRANSFER_PROCESS_IMPORT_PLUGIN_DATA = "myapp.some.module.import_function"
 
     # custom functions
     def export_function(plugin, plugin_data):
@@ -158,22 +164,11 @@ different systems while setting the contents as you need it::
         return plugin_data
 
     def import_function(plugin, plugin_data):
-        some_related_fallback_object = MyModel.objects.first()
-        for field in plugin._meta.fields:
-            # example of setting a default value for a related field
-            if isinstance(field, ForeignKey):
-                plugin_value = getattr(plugin, field.attname)
-                raw_value = plugin_data[field.name]
-                if (
-                    field.related_model == MyModel
-                    # related object is referenced, but does not exist
-                    and plugin_value is None and raw_value is not None
-                ):
-                    setattr(plugin, field.name, some_related_fallback_object)
-        # There is no guarantee on whether djangocms-transfer saves the
-        # plugin. It is recommended to do this yourself in case you changed
-        # the plugin.
-        plugin.save()
+        if plugin.plugin_type == "SomePlugin":
+            plugin.some_field = plugin_data["some_field"].strip()
+            # Validate and save changes made after the initial import save.
+            plugin.full_clean()
+            plugin.save()
 
 
 Running Tests
